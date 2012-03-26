@@ -304,6 +304,21 @@ class Pwned_Client
         
         $content = curl_exec($ch);
         
+        $result = json_decode($content, true);
+        
+        if ($result && $result['error'])
+        {
+            $this->addError($result['error']);
+        }
+        else if ($result)
+        {
+            $this->setLastError(null);
+        }
+        else
+        {
+            $this->addError(array('key' => 'invalid_json_structure_returned', 'reason' => 'The content returned from the server wasn\'t valid JSON.'));
+        }
+        
         if ($this->isDebuggingEnabled())
         {
             $this->addDebugValue('response', array(
@@ -313,20 +328,9 @@ class Pwned_Client
             ));
         }
         
-        $result = json_decode($content, true);
-        
         if (!$result)
         {
             return null;
-        }
-        
-        if ($result['error'])
-        {
-            $this->addError($result['error']);
-        }
-        else
-        {
-            $this->setLastError(null);
         }
         
         return $result['result'];
