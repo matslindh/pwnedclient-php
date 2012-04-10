@@ -104,7 +104,20 @@ class Pwned_Client
 
     public function disableDebugging()
     {
-        $this->debugEnabled = true;
+        $this->debugEnabled = false;
+    }
+    
+    /**
+     * Create a Tournament
+     * 
+     * Supported entries:
+     * 'name' => string: The name of the tournament
+     * 'gameId' => int: The integer id of the game type of the tournament
+     * 
+     */
+    public function createTournament($tournamentInfo)
+    {
+        return $this->request('tournaments', 'POST', $tournamentInfo);
     }
     
     /**
@@ -116,7 +129,7 @@ class Pwned_Client
      */
     public function getCompetition($type, $competitionId)
     {
-        return $this->request($type . '/' . $competitionId, 'GET');
+        return $this->request($type . 's/' . $competitionId, 'GET');
     }
     
     /**
@@ -128,7 +141,7 @@ class Pwned_Client
      */
     public function updateCompetition($type, $competitionId, $competitionInfo)
     {
-        return $this->request($type . '/' . $competitionId, 'POST', $competitionInfo);
+        return $this->request($type . 's/' . $competitionId, 'POST', $competitionInfo);
     }
    
     
@@ -142,7 +155,7 @@ class Pwned_Client
     
     public function getSignups($type, $competitionId)
     {
-        return $this->request($type . '/' . $competitionId . '/signups', 'GET');
+        return $this->request($type . 's/' . $competitionId . '/signups', 'GET');
     }
     
     /**
@@ -154,7 +167,7 @@ class Pwned_Client
      */
     public function getRounds($type, $competitionId)
     {
-        return $this->request($type . '/' . $competitionId . '/rounds', 'GET');
+        return $this->request($type . 's/' . $competitionId . '/rounds', 'GET');
     }
 
     /**
@@ -166,7 +179,7 @@ class Pwned_Client
      */
     public function getRound($type, $competitionId, $roundNumber)
     {
-        return $this->request($type . '/' . $competitionId . '/rounds/' . $roundNumber, 'GET');
+        return $this->request($type . 's/' . $competitionId . '/rounds/' . $roundNumber, 'GET');
     }
     
     
@@ -193,7 +206,7 @@ class Pwned_Client
      */
     public function addSignups($type, $competitionId, $signups)
     {
-        return $this->request($type . '/' . $competitionId . '/signups', 'POST', $signups);
+        return $this->request($type . 's/' . $competitionId . '/signups', 'POST', $signups);
     }
     
     /**
@@ -207,7 +220,7 @@ class Pwned_Client
     
     public function removeSignup($type, $competitionId, $signupId)
     {
-        return $this->request($type . '/' . $competitionId . '/signups/' . $signupId, 'DELETE');
+        return $this->request($type . 's/' . $competitionId . '/signups/' . $signupId, 'DELETE');
     }
     
     /**
@@ -221,7 +234,7 @@ class Pwned_Client
     
     public function getMatch($type, $competitionId, $matchId)
     {
-        return $this->request($type . '/' . $competitionId . '/matches/' . $matchId, 'GET');
+        return $this->request($type . 's/' . $competitionId . '/matches/' . $matchId, 'GET');
     }
     
     /**
@@ -240,7 +253,37 @@ class Pwned_Client
      */
     public function updateMatch($type, $competitionId, $matchId, $matchData)
     {
-        return $this->request($type . '/' . $competitionId . '/matches/' . $matchId, 'POST', $matchData);
+        return $this->request($type . 's/' . $competitionId . '/matches/' . $matchId, 'POST', $matchData);
+    }
+    
+    /**
+     * Get a list of the configured games available and their metadata.
+     * 
+     * @return array<array>
+     */
+    public function getGames()
+    {
+        return $this->request('games', 'GET');
+    }
+    
+    /**
+     * Get a list of the available countries and their settings.
+     * 
+     * @return array<array>
+     */
+    public function getCountries()
+    {
+        return $this->request('countries', 'GET');
+    }    
+    
+    /**
+     * Ping the API server to see if it's alive and that your keys are working
+     * 
+     * @return string Returns 'pong' if successful, empty otherwise.
+     */
+    public function ping()
+    {
+        return $this->request('ping', 'GET');
     }
     
     public function getLastError()
@@ -251,6 +294,16 @@ class Pwned_Client
     public function setLastError($lastError)
     {
         $this->lastError = $lastError;
+    }
+    
+    public function getLastErrorReason()
+    {
+        if ($this->lastError)
+        {
+            return $this->lastError['reason'];
+        }
+        
+        return null;
     }
 
     public function getErrors()
