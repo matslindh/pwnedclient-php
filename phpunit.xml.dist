@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpunit colors="true" bootstrap="bootstrap.php">
+    <testsuites>
+        <testsuite name="Pwned Client Test Suite">
+            <directory>tests/Pwned</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <var name="PWNED_API_URL" value="http://api.pwned.localhost" />
+        <var name="PWNED_API_PUBLIC_KEY" value="" />
+        <var name="PWNED_API_PRIVATE_KEY" value="" />
+    </php>
+</phpunit>
