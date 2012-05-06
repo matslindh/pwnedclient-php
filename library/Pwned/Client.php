@@ -224,6 +224,23 @@ class Pwned_Client
     }
     
     /**
+     * Replace one signup with another signup - the replaceWith signup will be placed in all non-completed matches
+     * for the original signup.
+     * 
+     * @param string $type
+     * @param int $competitionId
+     * @param int $signupId The id of original signup - the signup to be replaced with another
+     * @param int $replaceWithSignupId The id of the signup which should replace the original signup
+     */
+    public function replaceSignup($type, $competitionId, $signupId, $replaceWithSignupId)
+    {
+        return $this->request($type . 's/' . $competitionId . '/signups/replace', 'POST', array(
+            'replaceSignupId' => $signupId,
+            'replaceWithSignupId' => $replaceWithSignupId,
+        ));
+    }
+    
+    /**
      * Get information about a particular match.
      * 
      * @param string $type

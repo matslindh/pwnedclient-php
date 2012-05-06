@@ -139,7 +139,32 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
      */
     public function testRemoveSignup($competitionAndSignups)
     {
+        $competition = $competitionAndSignups['competition'];
+        $signups = $competitionAndSignups['signups'];
+        $this->assertNotEmpty($signups);
         
+        $result = $this->client->removeSignup($competition['type'], $competition['id'], $signups[0]['id']);
+        $this->assertEmpty($this->client->getLastError());
+        $this->assertTrue($result);
+        
+        $signupsAfter = $this->client->getSignups($competition['type'], $competition['id']);
+        $this->assertEquals(count($signups) - 1, count($signupsAfter), "Number of signups after removing one didn't match the original number - 1");
+    }
+    
+    /**
+     * @depends testAddSignups
+     */
+    public function testReplaceSignup($competitionAndSignups)
+    {
+        // wether the correct match replacements happen is not a client test, so we'll just test that the method completes OK
+        $competition = $competitionAndSignups['competition'];
+        $signups = $competitionAndSignups['signups'];
+        $this->assertNotEmpty($signups);
+        
+        $result = $this->client->replaceSignup($competition['type'], $competition['id'], $signups[0]['id'], $signups[1]['id']);
+        $this->assertEmpty($this->client->getLastError(), $this->client->getLastError() ? join(',', $this->client->getLastError()) : '');
+        
+        $this->assertTrue($result);
     }
     
     /**
