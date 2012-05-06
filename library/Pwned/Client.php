@@ -150,12 +150,13 @@ class Pwned_Client
      * 
      * @param string $type
      * @param int $competitionId
+     * @param string $fetchMode 'normal' to retrieve accepted and not on waiting list, 'waiting' to retrieve accepted and on waiting list, 'notaccepted' to fetch not accepted signups.
      * @return array
      */
     
-    public function getSignups($type, $competitionId)
+    public function getSignups($type, $competitionId, $fetchMode = null)
     {
-        return $this->request($type . 's/' . $competitionId . '/signups', 'GET');
+        return $this->request($type . 's/' . $competitionId . '/signups' . ($fetchMode ? '/' . $fetchMode : ''), 'GET');
     }
     
     /**

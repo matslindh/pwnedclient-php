@@ -34,9 +34,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
             'countryId' => 1,
         );
         
-        $this->client->enableDebugging();
-        
-        $competition = $this->client->createTournament($competitionInput);
+        $competition = $this->createNewCompetitionForTests($competitionInput);
         
         $this->assertNotEmpty($competition, $this->client->getLastErrorReason());
         $this->assertNotEmpty($competition['id'], $this->client->getLastErrorReason());
@@ -129,9 +127,90 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     /**
      * @depends testCreateTournament
      */
-    public function testAddSignupsToWaitingList()
+    public function testAddSignupsVariations()
     {
+        $competition = $this->createNewCompetitionForTests();
         
+        $signups = array(
+            array(
+                'name' => 'SignupTestVariation One',
+                'hasServer' => false,
+                'isAccepted' => true,
+                'onWaitingList' => true,
+                'contact' => 'ContactVariation One',
+                'remoteId' => '1234567',
+            ),
+            array(
+                'name' => 'SignupTestVariation Two',
+                'hasServer' => true,
+                'isAccepted' => false,
+                'onWaitingList' => false,
+                'contact' => 'ContactVariation Two',
+                'remoteId' => '89101113',
+            ),
+            array(
+                'name' => 'SignupTestVariation Three',
+                'hasServer' => true,
+                'isAccepted' => true,
+                'onWaitingList' => false,
+                'contact' => 'ContactVariation Three',
+                'remoteId' => '89101114',
+            ),
+            array(
+                'name' => 'SignupTestVariation Four',
+                'hasServer' => true,
+                'isAccepted' => false,
+                'onWaitingList' => true,
+                'contact' => 'ContactVariation Four',
+                'remoteId' => '89101115',
+            ),
+        );
+        
+        $addSignups = $this->client->addSignups($competition['type'], $competition['id'], $signups);
+        $signupsRegistered = $this->client->getSignups($competition['type'], $competition['id'], 'all');
+        
+        $this->assertCount(4, $signupsRegistered);
+        
+        $this->assertNotEmpty($signupsRegistered[0]['id']);
+        $this->assertNotEmpty($signupsRegistered[1]['id']);
+        $this->assertNotEmpty($signupsRegistered[2]['id']);
+        $this->assertNotEmpty($signupsRegistered[3]['id']);
+        
+        foreach($signups as $idx => $signup)
+        {
+            foreach($signup as $field => $value)
+            {
+                $this->assertEquals($value, $signupsRegistered[$idx][$field], $signup['name'] . ': ' . $field . ': ' . $value . ' / ' . $signupsRegistered[$idx][$field]);
+            }
+        }
+        
+        return array('competition' => $competition, 'signups' => $signups);
+    }
+    
+    /**
+     * @depends testAddSignupsVariations
+     */
+    public function testGetSignupsFetchMode($competitionAndSignups)
+    {
+        $competition = $competitionAndSignups['competition'];
+        
+        // all signups
+        $signups = $this->client->getSignups($competition['type'], $competition['id'], 'all');
+        $this->assertCount(4, $signups);
+        
+        // accepted and not on waiting list
+        $signups = $this->client->getSignups($competition['type'], $competition['id']);
+        $this->assertCount(1, $signups);
+        
+        // accepted and not on waiting list
+        $signups = $this->client->getSignups($competition['type'], $competition['id'], 'waiting');
+        $this->assertCount(1, $signups);
+        
+        // only not accepted
+        $signups = $this->client->getSignups($competition['type'], $competition['id'], 'notaccepted');
+        $this->assertCount(2, $signups);
+        
+        return $competition;
     }
     
     /**
@@ -140,7 +219,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     public function testRemoveSignup($competitionAndSignups)
     {
         $competition = $competitionAndSignups['competition'];
-        $signups = $competitionAndSignups['signups'];
+        $signups =  $this->client->getSignups($competition['type'], $competition['id']);;
         $this->assertNotEmpty($signups);
         
         $result = $this->client->removeSignup($competition['type'], $competition['id'], $signups[0]['id']);
@@ -232,5 +311,21 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         
         $error = $this->client->getLastError();
         $this->assertEquals('request_signature_is_invalid', $error['key']);
+    }
+    
+    protected function createNewCompetitionForTests($competitionInput = null)
+    {
+        if (!$competitionInput)
+        {
+            $competitionInput = array(
+                'name' => 'Test Tournament #123',
+                'gameId' => 3,
+                'playersOnTeam' => 5,
+                'template' => 'singleelim16',
+                'countryId' => 1,
+            );
+        }
+        
+        return $this->client->createTournament($competitionInput);
     }
 }
