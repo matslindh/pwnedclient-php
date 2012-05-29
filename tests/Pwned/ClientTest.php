@@ -39,16 +39,46 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertNotEmpty($competition, $this->client->getLastErrorReason());
         $this->assertNotEmpty($competition['id'], $this->client->getLastErrorReason());
         $this->assertNotEmpty($competition['game']['id']);
-        $this->assertEquals($competition['game']['id'], $competitionInput['gameId']);
-        $this->assertEquals($competition['name'], $competitionInput['name']);
-        $this->assertEquals($competition['type'], 'tournament');
-        $this->assertEquals($competition['playersOnTeam'], 5);
-        $this->assertEquals($competition['template'], $competitionInput['template']);
-        $this->assertEquals($competition['status'], 'ready');
-        $this->assertEquals($competition['teamCount'], 16);
+        $this->assertEquals($competitionInput['gameId'], $competition['game']['id']);
+        $this->assertEquals($competitionInput['name'], $competition['name']);
+        $this->assertEquals('tournament', $competition['type']);
+        $this->assertEquals(5, $competition['playersOnTeam']);
+        $this->assertEquals($competitionInput['template'], $competition['template']);
+        $this->assertEquals('ready', $competition['status']);
+        $this->assertEquals(16, $competition['teamCount']);
         
         return $competition;
     }
+    
+    public function testCreateTournamentGroupStage()
+    {
+        $competitionInput = array(
+            'name' => 'Test Tournament #123',
+            'gameId' => 3,
+            'playersOnTeam' => 5,
+            'template' => 'doubleelim4',
+            'countryId' => 1,
+            'groupCount' => 2,
+            'groupSize' => 4,
+        );
+        
+        $competition = $this->createNewCompetitionForTests($competitionInput);
+        
+        $this->assertNotEmpty($competition, $this->client->getLastErrorReason());
+        $this->assertNotEmpty($competition['id'], $this->client->getLastErrorReason());
+        $this->assertNotEmpty($competition['game']['id']);
+        $this->assertEquals($competitionInput['gameId'], $competition['game']['id']);
+        $this->assertEquals($competitionInput['name'], $competition['name']);
+        $this->assertEquals('tournament', $competition['type']);
+        $this->assertEquals(5, $competition['playersOnTeam']);
+        $this->assertEquals($competitionInput['template'], $competition['template']);
+        $this->assertEquals('ready', $competition['status']);
+        $this->assertEquals(8, $competition['teamCount']);
+        $this->assertEquals(4, $competition['groupSize']);
+        $this->assertEquals(2, $competition['groupCount']);
+        
+        return $competition;
+    }    
     
     /**
      * @depends testCreateTournament
