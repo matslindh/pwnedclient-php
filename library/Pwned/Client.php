@@ -112,11 +112,12 @@ class Pwned_Client
      * 
      * Supported entries:
      * 'name' => string: The name of the tournament
+     * 'template' => string: The template to use for the bracket setup - the type of tournament to create
      * 'gameId' => int: The integer id of the game type of the tournament
-     * 
-     * Optional entries:
      * 'playersOnTeam' => int: The number of players on each team in the tournament
      * 'countryId' => int: Which country this tournament is in / assigned to
+     * 
+     * Optional entries:
      * 'language' => string: The default language to present the tournament in (valid values are currently norwegian, english)
      * 'description' => string: The description of the tournament; a subset of HTML is supported and is purified after being submitted.
      * 'groupCount' => int: the number of groups in the preliminary stage
@@ -281,6 +282,16 @@ class Pwned_Client
     {
         return $this->request($type . 's/' . $competitionId . '/matches/' . $matchId, 'POST', $matchData);
     }
+    
+    /**
+     * Get a list of the available tournament bracket types 
+     * 
+     * @return array<array>
+     */
+    public function getTournamentTemplates()
+    {
+        return $this->request('tournaments/templates', 'GET');
+    }    
     
     /**
      * Get a list of the configured games available and their metadata.
