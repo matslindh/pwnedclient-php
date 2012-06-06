@@ -114,6 +114,14 @@ class Pwned_Client
      * 'name' => string: The name of the tournament
      * 'gameId' => int: The integer id of the game type of the tournament
      * 
+     * Optional entries:
+     * 'playersOnTeam' => int: The number of players on each team in the tournament
+     * 'countryId' => int: Which country this tournament is in / assigned to
+     * 'language' => string: The default language to present the tournament in (valid values are currently norwegian, english)
+     * 'description' => string: The description of the tournament; a subset of HTML is supported and is purified after being submitted.
+     * 'groupCount' => int: the number of groups in the preliminary stage
+     * 'groupSize' => int: the size of the groups in the preliminary stage
+     * 'quickProgress' => boolean: Wether the tournament should use the "quick progress" format where teams are moved to the next round as soon as a result is entered.
      */
     public function createTournament($tournamentInfo)
     {
