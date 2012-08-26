@@ -32,6 +32,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
             'playersOnTeam' => 5,
             'template' => 'singleelim16',
             'countryId' => 1,
+            'description' => 'Foobar Description #123',
         );
         
         $competition = $this->createNewCompetitionForTests($competitionInput);
@@ -46,6 +47,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($competitionInput['template'], $competition['template']);
         $this->assertEquals('ready', $competition['status']);
         $this->assertEquals(16, $competition['teamCount']);
+        $this->assertEquals($competitionInput['description'], $competition['description']);
         
         return $competition;
     }
@@ -61,7 +63,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
             'groupCount' => 2,
             'groupSize' => 4,
         );
-        
+
         $competition = $this->createNewCompetitionForTests($competitionInput);
         
         $this->assertNotEmpty($competition, $this->client->getLastErrorReason());
@@ -274,6 +276,82 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEmpty($this->client->getLastError(), $this->client->getLastError() ? join(',', $this->client->getLastError()) : '');
         
         $this->assertTrue($result);
+    }
+    
+    public function testGetTournamentTemplates()
+    {
+        $templates = $this->client->getTournamentTemplates();
+        
+        $this->assertNotEmpty($templates);
+    }
+    
+    public function testGetCompetition()
+    {
+        $competitionInput = array(
+            'name' => 'Test Tournament #123',
+            'gameId' => 3,
+            'playersOnTeam' => 5,
+            'template' => 'singleelim16',
+            'countryId' => 1,
+        );
+        
+        $competition = $this->createNewCompetitionForTests($competitionInput);
+        $competitionFetched = $this->client->getCompetition('tournament', $competition['id']);
+        
+        $this->assertNotEmpty($competitionFetched, $this->client->getLastErrorReason());
+        $this->assertNotEmpty($competitionFetched['id'], $this->client->getLastErrorReason());
+        $this->assertNotEmpty($competitionFetched['game']['id']);
+        $this->assertEquals($competitionFetched['game']['id'], $competition['game']['id']);
+        $this->assertEquals($competitionFetched['name'], $competition['name']);
+        $this->assertEquals($competitionFetched['type'], $competition['type']);
+        $this->assertEquals($competitionFetched['playersOnTeam'], $competition['playersOnTeam']);
+        $this->assertEquals($competitionFetched['template'], $competition['template']);
+        $this->assertEquals('ready', $competitionFetched['status']);
+        $this->assertEquals($competitionFetched['teamCount'], $competition['teamCount']);
+    }
+    
+    /**
+     * @depends testCreateTournament
+     */
+    public function testUpdateCompetition($competition)
+    {
+        $updatedInfo = array(
+            'name' => 'Foobar Updated Competition #' . uniqid(),
+            'gameId' => 1,
+            'playersOnTeam' => 2,
+            'countryId' => 2,
+            'description' => 'foo ' . uniqid(),
+        );
+        
+        $this->client->updateCompetition($competition['type'], $competition['id'], $updatedInfo);
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        
+        $this->assertNotEmpty($updatedCompetition, $this->client->getLastErrorReason());
+        $this->assertNotEmpty($updatedCompetition['id'], $this->client->getLastErrorReason());
+        $this->assertNotEmpty($updatedCompetition['game']['id']);
+        $this->assertEquals($updatedInfo['gameId'], $updatedCompetition['game']['id']);
+        $this->assertEquals($updatedInfo['name'], $updatedCompetition['name']);
+        $this->assertEquals('tournament', $updatedCompetition['type']);
+        $this->assertEquals($updatedInfo['playersOnTeam'], $updatedCompetition['playersOnTeam']);
+        $this->assertEquals('ready', $updatedCompetition['status']);
+        $this->assertEquals($updatedInfo['description'], $updatedCompetition['description']);
+    }
+    
+    /**
+     * @depends testCreateTournament
+     */
+    public function testUpdateTournamentTemplate($competition)
+    {
+        $this->client->enableDebugging();
+        
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'template' => 'singleelim8',
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEquals('singleelim8', $updatedCompetition['template']);
+        $this->assertEquals('ready', $updatedCompetition['status']);
+        $this->assertEquals(8, $updatedCompetition['teamCount']);
     }
     
     /**

@@ -145,8 +145,17 @@ class Pwned_Client
      * Update a competition (start it, move it to next round, etc.)
      * 
      * Currently supported data array values:
+     * 
+     * Optional entries:
+     * 'name' => string: the name of the competition
+     * 'playersOnTeam' => int: the number of players on each team ([1, 1024])
+     * 'gameId' => int: the game the competition is for
+     * 'description' => string: The text featured as the description of the competition. Supports a safe subset of HTML.
      * 'round' => int: the current round - increase it with one to move to the next round, reduce it with one to move the competition a round back.
      * 'status' => string: the current state of the competition, possible values are 'ready', 'live', 'deleted', set it to live to start the competition, set it to delete to delete the competition.
+     * 
+     * Optional entries for tournaments:
+     * 'template' => string: the tournament template to change the tournament to. You may only change the template before starting the tournament. Valid templates are available at /tournaments/templates or through getTemplates in the client.
      */
     public function updateCompetition($type, $competitionId, $competitionInfo)
     {
