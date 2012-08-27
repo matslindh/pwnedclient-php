@@ -16,6 +16,8 @@ as it doesn't have any external dependencies.
 
 Please see [the unit tests in ClientTest.php](pwnedclient-php/blob/master/tests/Pwned/ClientTest.php) for useful examples of how to use the library.
 
+Most methods that retrieve or update information has 'type' as the first argument. This argument refers to the type of competition we're referencing, and in the examples provided below it is just set to 'tournament' to avoid confusion. In the future the API might support other types of competitions, and will require a different value here depending on that type of competition you're referencing. You can use the 'type' key in the array returned from ```getCompetition()``` to identify what the value should be in code.
+
 ### Create a Pwned client instance
 ```php
 $pwned = new Pwned_Client('<url>', '<publicKey>', '<privateKey>');
