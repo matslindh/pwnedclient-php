@@ -1,11 +1,17 @@
 <?php
 class Pwned_ClientTest extends PHPUnit_Framework_TestCase
 {
+    /**
+     * Set up a pwned client for internal re-use for each test.
+     */
     public function setUp()
     {
         $this->client = new Pwned_Client($GLOBALS['PWNED_API_URL'], $GLOBALS['PWNED_API_PUBLIC_KEY'], $GLOBALS['PWNED_API_PRIVATE_KEY']);
     }
     
+    /**
+     * Test if we can retrieve the list of available games at pwned.
+     */
     public function testGetGames()
     {
         $games = $this->client->getGames();
@@ -14,6 +20,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertNotEmpty($games[0]['id']);
     }
     
+    /**
+     * Test if we can retrieve the countries available at pwned.
+     */
     public function testGetCountries()
     {
         $countries = $this->client->getCountries();
@@ -24,6 +33,11 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(count($countries) > 5, true, "Country count is less than five.");
     }
     
+    /**
+     * Test if we can create tournaments.
+     *
+     * @return array An array representing the created competition.
+     */
     public function testCreateTournament()
     {
         $competitionInput = array(
@@ -52,6 +66,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         return $competition;
     }
     
+    /**
+     * Test that we can create a tournament with a group stage.
+     */
     public function testCreateTournamentGroupStage()
     {
         $competitionInput = array(
@@ -83,6 +100,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }    
     
     /**
+     * Test retrieval of all rounds defined for a tournament.
+     * 
      * @depends testCreateTournament
      */
     public function testGetRounds($competition)
@@ -103,6 +122,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test retrieval of one specific round created for a tournament.
+     * 
      * @depends testCreateTournament
      */
     public function testGetRound($competition)
@@ -114,6 +135,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test adding of signups to a competition.
+     * 
      * @depends testCreateTournament
      */
     public function testAddSignups($competition)
@@ -157,6 +180,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test variations of different signups to be added to a tournament.
+     * 
      * @depends testCreateTournament
      */
     public function testAddSignupsVariations()
@@ -220,6 +245,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test if we can get the signups that has been registered for a tournament, depending on the type of signup (all, accepted, on waiting list or refused / not accepted).
+     * 
      * @depends testAddSignupsVariations
      */
     public function testGetSignupsFetchMode($competitionAndSignups)
@@ -246,6 +273,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test if we can remove a signup from a competition.
+     * 
      * @depends testAddSignups
      */
     public function testRemoveSignup($competitionAndSignups)
@@ -263,6 +292,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test if we can replace an existing signup with a new one.
+     * 
      * @depends testAddSignups
      */
     public function testReplaceSignup($competitionAndSignups)
@@ -278,6 +309,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertTrue($result);
     }
     
+    /**
+     * Test if we can retrieve all the available tournament templates.
+     */
     public function testGetTournamentTemplates()
     {
         $templates = $this->client->getTournamentTemplates();
@@ -285,6 +319,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertNotEmpty($templates);
     }
     
+    /**
+     * Test if the client is able to retrieve information about a competition.
+     */
     public function testGetCompetition()
     {
         $competitionInput = array(
@@ -311,6 +348,8 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test if we can update the general information about a competition.
+     * 
      * @depends testCreateTournament
      */
     public function testUpdateCompetition($competition)
@@ -338,12 +377,12 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test if we can change the template of a tournament.
+     * 
      * @depends testCreateTournament
      */
     public function testUpdateTournamentTemplate($competition)
     {
-        $this->client->enableDebugging();
-        
         $this->client->updateCompetition($competition['type'], $competition['id'], array(
             'template' => 'singleelim8',
         ));
@@ -352,6 +391,29 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('singleelim8', $updatedCompetition['template']);
         $this->assertEquals('ready', $updatedCompetition['status']);
         $this->assertEquals(8, $updatedCompetition['teamCount']);
+    }
+    
+    /**
+     * Test if we can update template and group size information for a tournament.
+     * 
+     * @depends testCreateTournament
+     */
+    public function testUpdateTournamentGroupInformation($competition)
+    {
+        $this->client->enableDebugging();
+        
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'template' => 'singleelim8',
+            'groupSize' => 8,
+            'groupCount' => 4,
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEquals('singleelim8', $updatedCompetition['template']);
+        $this->assertEquals(8, $updatedCompetition['groupSize']);
+        $this->assertEquals(4, $updatedCompetition['groupCount']);
+        $this->assertEquals('ready', $updatedCompetition['status']);
+        $this->assertEquals(32, $updatedCompetition['teamCount']);
     }
     
     /**
@@ -370,19 +432,28 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         
     }
     
+    /**
+     * Test if the client is able to ping the API at pwned (to verify that the api is available and the api keys work).
+     */
     public function testPing()
     {
         $response = $this->client->ping();
         
         $this->assertEquals('pong', $response, $this->client->getLastErrorReason());
     }
-
+    
+    /**
+     * Test that debugging is disabled by default in the client.
+     */
     public function testDefaultDisabledDebugging()
     {
         $this->client->ping();
         $this->assertEmpty($this->client->getDebugValues());
     }
     
+    /**
+     * Test that we can turn on debugging and that debugging actually logs values.
+     */
     public function testEnableDebugging()
     {
         $this->client->enableDebugging();
@@ -390,6 +461,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertNotEmpty($this->client->getDebugValues());
     }
     
+    /**
+     * Test that we can disable debugging after having turned it on.
+     */
     public function testDisableDebugging()
     {
         $this->client->enableDebugging();
@@ -399,6 +473,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEmpty($this->client->getDebugValues());
     }
     
+    /**
+     * Test that the client returns the correct error when we have an invalid public api key.
+     */
     public function testInvalidPublicKey()
     {
         $this->client->setPublicKey('this-is-an-invalid-key');
@@ -410,6 +487,9 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('invalid_public_key_provided', $error['key']);
     }
     
+    /**
+     * Test that the client returns the correct error when we have an invalid private api key.
+     */
     public function testInvalidPrivateKey()
     {
         $this->client->setPrivateKey('this-is-an-invalid-key');
@@ -421,6 +501,12 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('request_signature_is_invalid', $error['key']);
     }
     
+    /**
+     * Internal method to create a competition for further tests across test methods.
+     * 
+     * @param array $competitionInput If we should create a tournament with specific values, supply the information here.
+     * @return array An example tournament / competition created for further testing.
+     */
     protected function createNewCompetitionForTests($competitionInput = null)
     {
         if (!$competitionInput)

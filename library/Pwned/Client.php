@@ -156,12 +156,13 @@ class Pwned_Client
      * 
      * Optional entries for tournaments:
      * 'template' => string: the tournament template to change the tournament to. You may only change the template before starting the tournament. Valid templates are available at /tournaments/templates or through getTemplates in the client.
+     * 'groupSize' => int: the number of teams/players in each group stage if a preliminary group stage is requested [2,16]
+     * 'groupCount' => int: the number of groups in an optional preliminary group stage (both groupSize and groupCount are required together) [2,64]
      */
     public function updateCompetition($type, $competitionId, $competitionInfo)
     {
         return $this->request($type . 's/' . $competitionId, 'POST', $competitionInfo);
     }
-   
     
     /**
      * Retrieve a list of signups for a competition.
