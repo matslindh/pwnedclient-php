@@ -14,6 +14,8 @@ as it doesn't have any external dependencies.
 
 ## Usage
 
+Please see [the unit tests in ClientTest.php](blob/master/tests/Pwned/ClientTest.php) for useful examples of how to use the library.
+
 ### Create a Pwned client instance
 ```php
 $pwned = new Pwned_Client('<url>', '<publicKey>', '<privateKey>');
