@@ -108,6 +108,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     {
         $rounds = $this->client->getRounds($competition['type'], $competition['id']);
         $this->assertCount(4, $rounds);
+        $this->assertEquals($competition['roundCount'], count($rounds));
         
         // add check for actual content of rounds here..
         $this->assertCount(8, $rounds[0]['stages'][0]['matches']);
@@ -261,7 +262,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $signups = $this->client->getSignups($competition['type'], $competition['id']);
         $this->assertCount(1, $signups);
         
-        // accepted and not on waiting list
+        // accepted on waiting list
         $signups = $this->client->getSignups($competition['type'], $competition['id'], 'waiting');
         $this->assertCount(1, $signups);
         
@@ -360,6 +361,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
             'playersOnTeam' => 2,
             'countryId' => 2,
             'description' => 'foo ' . uniqid(),
+            'quickProgress' => true,
         );
         
         $this->client->updateCompetition($competition['type'], $competition['id'], $updatedInfo);
@@ -373,6 +375,7 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('tournament', $updatedCompetition['type']);
         $this->assertEquals($updatedInfo['playersOnTeam'], $updatedCompetition['playersOnTeam']);
         $this->assertEquals('ready', $updatedCompetition['status']);
+        $this->assertEquals(1, $updatedCompetition['quickProgress']);
         $this->assertEquals($updatedInfo['description'], $updatedCompetition['description']);
     }
     
@@ -400,8 +403,6 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
      */
     public function testUpdateTournamentGroupInformation($competition)
     {
-        $this->client->enableDebugging();
-        
         $this->client->updateCompetition($competition['type'], $competition['id'], array(
             'template' => 'singleelim8',
             'groupSize' => 8,
@@ -414,6 +415,35 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(4, $updatedCompetition['groupCount']);
         $this->assertEquals('ready', $updatedCompetition['status']);
         $this->assertEquals(32, $updatedCompetition['teamCount']);
+    }
+    
+    /**
+     * Test if we remove a group size setting after setting it
+     * 
+     * @depends testCreateTournament
+     */
+    public function testUpdateTournamentRemoveGroupInformation($competition)
+    {
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'template' => 'singleelim8',
+            'groupSize' => 8,
+            'groupCount' => 4,
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEquals(8, $updatedCompetition['groupSize']);
+        $this->assertEquals(4, $updatedCompetition['groupCount']);
+        $this->assertEquals(32, $updatedCompetition['teamCount']);
+        
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'groupSize' => 0,
+            'groupCount' => 0,            
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEmpty($updatedCompetition['groupSize']);
+        $this->assertEmpty($updatedCompetition['groupCount']);
+        $this->assertEquals(8, $updatedCompetition['teamCount']);        
     }
     
     /**
