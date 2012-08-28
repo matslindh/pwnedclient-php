@@ -447,6 +447,35 @@ class Pwned_ClientTest extends PHPUnit_Framework_TestCase
     }
     
     /**
+     * Test that the client handles 'null' values correctly when resetting group information
+     * 
+     * @depends testCreateTournament
+     */
+    public function testUpdateTournamentRemoveGroupInformationWithNulls($competition)
+    {
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'template' => 'singleelim8',
+            'groupSize' => 8,
+            'groupCount' => 4,
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEquals(8, $updatedCompetition['groupSize']);
+        $this->assertEquals(4, $updatedCompetition['groupCount']);
+        $this->assertEquals(32, $updatedCompetition['teamCount']);
+        
+        $this->client->updateCompetition($competition['type'], $competition['id'], array(
+            'groupSize' => null,
+            'groupCount' => null,            
+        ));
+        
+        $updatedCompetition = $this->client->getCompetition($competition['type'], $competition['id']);
+        $this->assertEmpty($updatedCompetition['groupSize']);
+        $this->assertEmpty($updatedCompetition['groupCount']);
+        $this->assertEquals(8, $updatedCompetition['teamCount']);        
+    }    
+    
+    /**
      * @depends testCreateTournament
      */
     public function testGetMatch()
