@@ -169,10 +169,9 @@ class Pwned_Client
      * 
      * @param string $type
      * @param int $competitionId
-     * @param string $fetchMode 'normal' to retrieve accepted and not on waiting list, 'waiting' to retrieve accepted and on waiting list, 'notaccepted' to fetch not accepted signups.
+     * @param string $fetchMode 'normal' to retrieve accepted and not on waiting list, 'waiting' to retrieve accepted and on waiting list, 'notaccepted' to fetch not accepted signups and 'all' to retrieve all signed up teams regardless of state.
      * @return array
      */
-    
     public function getSignups($type, $competitionId, $fetchMode = null)
     {
         return $this->request($type . 's/' . $competitionId . '/signups' . ($fetchMode ? '/' . $fetchMode : ''), 'GET');
@@ -237,7 +236,6 @@ class Pwned_Client
      * @param int $signupId
      * @return boolean 
      */
-    
     public function removeSignup($type, $competitionId, $signupId)
     {
         return $this->request($type . 's/' . $competitionId . '/signups/' . $signupId, 'DELETE');
@@ -268,7 +266,6 @@ class Pwned_Client
      * @param int $matchId
      * @return array 
      */
-    
     public function getMatch($type, $competitionId, $matchId)
     {
         return $this->request($type . 's/' . $competitionId . '/matches/' . $matchId, 'GET');
