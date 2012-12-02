@@ -9,6 +9,7 @@ class Pwned_Client
     
     protected $debugValues = array();
     protected $debugEnabled = false;
+    protected $errorCallback = null;
     
     public function __construct($url, $publicKey, $privateKey)
     {
@@ -62,6 +63,26 @@ class Pwned_Client
         return $this->debugValues;
     }
     
+    /**
+     * Get the callback function which is called if an error occurs
+     * 
+     * @return function
+     */
+    public function getErrorCallback()
+    {
+        return $this->errorCallback;
+    }
+
+    /**
+     * Set the callback to use if an error occurs.
+     * 
+     * @param function $errorCallback 
+     */
+    public function setErrorCallback($errorCallback)
+    {
+        $this->errorCallback = $errorCallback;
+    }
+        
     /**
      * If debugging is enabled, retrieve a string version of the requests to the server and responses from the server.
      * 
@@ -130,6 +151,25 @@ class Pwned_Client
     }
     
     /**
+     * Create a League
+     * 
+     * Supported entries:
+     * 'name' => string: The name of the league
+     * 'leagueType' => string: The type of league
+     * 'gameId' => int: The integer id of the game type of the league
+     * 'playersOnTeam' => int: The number of players on each team in the league
+     * 'countryId' => int: Which country this league is in / assigned to
+     * 
+     * Optional entries:
+     * 'language' => string: The default language to present the league in (valid values are currently norwegian, english)
+     * 'description' => string: The description of the league; a subset of HTML is supported and is purified after being submitted.
+     */
+    public function createLeague($leagueInfo)
+    {
+        return $this->request('leagues', 'POST', $leagueInfo);
+    }    
+    
+    /**
      * Get base information for a competition.
      * 
      * @param string $type
@@ -162,6 +202,14 @@ class Pwned_Client
     public function updateCompetition($type, $competitionId, $competitionInfo)
     {
         return $this->request($type . 's/' . $competitionId, 'POST', $competitionInfo);
+    }
+    
+    /**
+     * Helper function to start a competition
+     */
+    public function startCompetition($type, $competitionId)
+    {
+        return $this->updateCompetition($type, $competitionId, array('status' => 'live'));
     }
     
     /**
@@ -298,7 +346,68 @@ class Pwned_Client
     public function getTournamentTemplates()
     {
         return $this->request('tournaments/templates', 'GET');
-    }    
+    }
+    
+    /**
+     * Move tournament walkovers (teams missing opponents) to the next round.
+     * 
+     * @return array The number of walkovers performed (with the key 'count')
+     */
+    public function moveTournamentWalkoversToNextRound($type, $competitionId)
+    {
+        return $this->request($type . 's/' . $competitionId . '/handlewalkovers', 'POST');
+    }
+    
+    /**
+     * Get the table / standings for a league.
+     * 
+     * @return array<array> Returns an array of arrays, each array containing information about the table position.
+     */
+    public function getLeagueTable($leagueId)
+    {
+        return $this->request('leagues/' . $leagueId . '/table', 'GET');
+    }
+    
+    /**
+     * Get a list of all the available scoring models for leagues and championships
+     * 
+     * @return array<array>
+     */
+    public function getLeagueScoringModels($type = null)
+    {
+        return $this->request('leagues/scoringmodels' . ($type ? '/' . $type : ''), 'GET');
+    }
+    
+    /**
+     * Retrieve a specific league scoring model
+     * 
+     * @param int $scoringModelId The ID of the Scoring Model to fetch
+     */
+    public function getLeagueScoringModel($scoringModelId)
+    {
+        return $this->request('leagues/scoringmodels/' . ((int) $scoringModelId));
+    }
+    
+    /**
+     * Submit an updated (or fresh) result for a particular round in a league (only valid for championships).
+     * 
+     * The results array is structured as an array of arrays, with each internal array keeping information
+     * about one team / player / signup competing in the championship.
+     * 
+     * A result entry consists of:
+     *  'position' => int: The end position of this result entry [1 - teamCount]
+     *  'signupId' => int: The signup id this positional entry refers to
+     *  'score' => int: The score associated with this entry (i.e. if the player got 35 points in this round, submit this value as 35).
+     * 
+     * @param int $leagueId The id of the league we're submitting results for
+     * @param int $roundNumber The round number to update [1, roundCount]
+     * @param array $results An array containing the results to set for this round.
+     * @return boolean
+     */
+    public function updateLeagueRoundResults($leagueId, $roundNumber, $results)
+    {
+        return $this->request('leagues/' . $leagueId . '/rounds/' . $roundNumber . '/results', 'POST', $results);
+    }
     
     /**
      * Get a list of the configured games available and their metadata.
@@ -423,6 +532,13 @@ class Pwned_Client
                 'url' => $url,
                 'data' => $content,
             ));
+            
+            if ($this->getLastError() && $this->getErrorCallback())
+            {
+                $debugValues = $this->getDebugValues();
+                $callback = $this->getErrorCallback();
+                $callback($debugValues[count($debugValues) - 2], $debugValues[count($debugValues) - 1]);
+            }
         }
         
         if (!$result)
