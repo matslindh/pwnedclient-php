@@ -133,17 +133,16 @@ class Pwned_Client
      *
      * Supported entries:
      * 'name' => string: The name of the tournament
-     * 'template' => string: The template to use for the bracket setup - the type of tournament to create
-     * 'gameId' => int: The integer id of the game type of the tournament
-     * 'playersOnTeam' => int: The number of players on each team in the tournament
-     * 'countryId' => int: Which country this tournament is in / assigned to
+     * 'tournamentType' => string: The type of tournament to create - 'singleelim' or 'doubleelim' are valid values.
+     * 'teamCount' => int: The number of teams (will be rounded up to the nearest 2^x value (4,8,16,32,.. etc).
      *
      * Optional entries:
-     * 'language' => string: The default language to present the tournament in (valid values are currently norwegian, english)
+     * 'playersOnTeam' => int: The number of players on each team in the tournament
+     * 'gameId' => int: The integer id of the game type of the tournament
      * 'description' => string: The description of the tournament; a subset of HTML is supported and is purified after being submitted.
      * 'groupCount' => int: the number of groups in the preliminary stage
      * 'groupSize' => int: the size of the groups in the preliminary stage
-     * 'quickProgress' => boolean: Wether the tournament should use the "quick progress" format where teams are moved to the next round as soon as a result is entered.
+     * 'quickProgress' => boolean: Wether the tournament should use the "quick progress" format where teams are moved to the next round as soon as a result is entered. This defaults to true.
      */
     public function createTournament($tournamentInfo)
     {
