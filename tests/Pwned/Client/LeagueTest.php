@@ -14,6 +14,7 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
             'leagueType' => 'league',
         ));
 
+        $this->assertEquals('league', $league['type']);
         $this->assertEquals($name, $league['name']);
         $this->assertEquals('Description here!', $league['description']);
         $this->assertEquals('league', $league['leagueType']);
