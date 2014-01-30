@@ -500,7 +500,6 @@ class Pwned_Client
     }
 
     /**
-<<<<<<< HEAD
      * Create a new bundle - a container if you want to group several competitions (for divisions, playoffs, etc.).
      *
      * The allowed keys in $settings:
@@ -551,8 +550,6 @@ class Pwned_Client
     }
 
     /**
-=======
->>>>>>> 22d58f125c171445dfd53018490af0a29e4b746f
      * Get the current ranking list for a ladder
      *
      * @param int $ladderId The id of the ladder to retrieve the current ranking for
@@ -565,7 +562,6 @@ class Pwned_Client
     }
 
     /**
-<<<<<<< HEAD
      * Get ranking details for a specific ranking
      *
      * @param int $rankingId The id of the ranking to retrieve
@@ -577,8 +573,6 @@ class Pwned_Client
     }
 
     /**
-=======
->>>>>>> 22d58f125c171445dfd53018490af0a29e4b746f
      * Add a score entry to a ranking.
      *
      * The entity behind the score entry can be identified by using `signupId`, `remoteId` or
@@ -618,7 +612,6 @@ class Pwned_Client
         return $this->request('rankings/' . $rankingId . '/entries/' . $rankingScoreId, 'GET');
     }
 
-<<<<<<< HEAD
     /**
      * Retrieve ranking entries from a specific ranking.
      *
@@ -644,18 +637,6 @@ class Pwned_Client
     public function getRankingEntriesAroundRemoteId($rankingId, $remoteId, $hits = 5)
     {
         return $this->get('rankings/' . $rankingId . '/entries', array('aroundRemoteId' => $remoteId, 'hits' => $hits));
-=======
-    public function getRankingEntries($rankingId, $arguments = array())
-    {
-        $subpath = '';
-
-        if (!empty($arguments['remoteId']))
-        {
-            $subpath = '/remoteId/' . $arguments['remoteId'];
-        }
-
-        return $this->request('rankings/' . $rankingId . '/entries' . ($subpath ?: ''), 'GET');
->>>>>>> 22d58f125c171445dfd53018490af0a29e4b746f
     }
 
     /**
