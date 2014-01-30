@@ -14,6 +14,7 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
             'leagueType' => 'league',
         ));
 
+        $this->assertEquals('league', $league['type']);
         $this->assertEquals($name, $league['name']);
         $this->assertEquals('Description here!', $league['description']);
         $this->assertEquals('league', $league['leagueType']);
@@ -769,12 +770,41 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
     }
 
     /**
+     * Test creating multiple leagues in the same statement.
+     */
+    public function testCreateMultipleLeagues()
+    {
+        $bundle = $this->client->createBundle(array(
+            'name' => 'Foo',
+        ));
+
+        $this->assertEquals('Foo', $bundle['name']);
+        $this->assertNotEmpty($bundle['id']);
+
+        $leagues = $this->client->createLeague(array(
+            'leagueType' => 'league',
+            'teamCount' => 8,
+            'scoringModelId' => 1,
+            'leagueCount' => 4,
+            'bundleId' => $bundle['id'],
+        ));
+
+        $this->assertCount(4, $leagues);
+
+        foreach ($leagues as $league)
+        {
+            $this->assertNotEmpty($league['id']);
+            $this->assertEquals(8, $league['teamCount']);
+            $this->assertEquals($bundle['id'], $league['bundleId']);
+        }
+    }
+
+    /**
      * Internal method to create a league across test methods.
      *
      * @param array $competitionInput To change any default values, supply better information here.
      * @return array A league created for further tests.
      */
-
     protected function createNewLeagueForTests($competitionInput = null)
     {
         $competitionInputValues = array(
