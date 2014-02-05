@@ -49,9 +49,9 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
 
         foreach ($rounds as $round)
         {
-            $this->assertCount(4, $round['stages'][0]['matches']);
+            $this->assertCount(4, $round['matches']);
 
-            foreach ($round['stages'][0]['matches'] as $match)
+            foreach ($round['matches'] as $match)
             {
                 $this->assertNotEmpty($match['signup'], 'signup missing in match!');
                 $this->assertNotEmpty($match['signupOpponent'], 'signupOpponent missing in match!');
@@ -70,7 +70,7 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
 
         foreach ($rounds as $round)
         {
-            foreach ($round['stages'][0]['matches'] as $match)
+            foreach ($round['matches'] as $match)
             {
                 if (!isset($matchCounts[$match['signup']['id']]))
                 {
@@ -115,7 +115,7 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         $league = $this->createLeagueWithSignupsAndStartIt();
         $rounds = $this->client->getRounds($league['type'], $league['id']);
 
-        $matches = $rounds[0]['stages'][0]['matches'];
+        $matches = $rounds[0]['matches'];
 
         $this->client->updateMatch($league['type'], $league['id'], $matches[0]['id'], array(
             'score' => 4,
@@ -194,11 +194,11 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
 
         foreach ($matches as $roundIdx => $matchArray)
         {
-            $stage = $rounds[$roundIdx]['stages'][0];
+            $round = $rounds[$roundIdx];
 
             foreach ($matchArray as $matchIdx => $results)
             {
-                $match = $stage['matches'][$matchIdx];
+                $match = $round['matches'][$matchIdx];
 
                 $this->client->updateMatch($league['type'], $league['id'], $match['id'], array(
                     'score' => $results[0],
@@ -796,6 +796,46 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
             $this->assertNotEmpty($league['id']);
             $this->assertEquals(8, $league['teamCount']);
             $this->assertEquals($bundle['id'], $league['bundleId']);
+        }
+    }
+
+    /**
+     * Test that we can update the teamCount for a League
+     */
+    public function testUpdatedTeamCount()
+    {
+        $league = $this->createNewLeagueForTests(array(
+            'teamCount' => 8,
+        ));
+
+        $this->assertEquals(8, $league['teamCount']);
+
+        $leagueFetched = $this->client->getCompetition($league['type'], $league['id']);
+        $this->assertEquals(8, $leagueFetched['teamCount']);
+
+        $this->client->updateCompetition($league['type'], $league['id'], array(
+            'teamCount' => 5,
+        ));
+
+        $leagueFetched = $this->client->getCompetition($league['type'], $league['id']);
+        $this->assertEquals(5, $leagueFetched['teamCount']);
+    }
+
+
+    /**
+     * Test that unfinishedMatches are populated correctly for each round.
+     */
+    public function testPopulatedUnfinishedMatches()
+    {
+        $competition = $this->createLeagueWithSignupsAndStartIt(array(
+        ));
+
+        $rounds = $this->client->getRounds('tournament', $competition['id'], 'winner');
+        $this->assertNotEmpty($rounds);
+
+        foreach ($rounds as $round)
+        {
+            $this->assertEquals(count($round['matches']), $round['unfinishedMatches']);
         }
     }
 

@@ -218,6 +218,39 @@ class Pwned_Client
     }
 
     /**
+     * Retrieve information about a league. Alias for getCompetition('league', ..);
+     *
+     * @param int $leagueId ID of the league to retrieve.
+     * @return type array
+     */
+    public function getLeague($leagueId)
+    {
+        return $this->getCompetition('league', $leagueId);
+    }
+
+    /**
+     * Retrieve information about a tournament. Alias for getCompetition('tournament', ..);
+     *
+     * @param int $tournamentId ID of the tournament to retrieve.
+     * @return type array
+     */
+    public function getTournament($tournamentId)
+    {
+        return $this->getCompetition('tournament', $tournamentId);
+    }
+
+    /**
+     * Retrieve information about a league. Alias for getCompetition('ladder', ..);
+     *
+     * @param int $ladderId ID of the ladder to retrieve.
+     * @return type array
+     */
+    public function getLadder($ladderId)
+    {
+        return $this->getCompetition('ladder', $ladderId);
+    }
+
+    /**
      * Update a competition (start it, move it to next round, etc.)
      *
      * Currently supported data array values:
@@ -235,6 +268,9 @@ class Pwned_Client
      * 'teamCount' => int: the number of teams / players to compete in the tournament (after the optional group stage).
      * 'groupSize' => int: the number of teams/players in each group stage if a preliminary group stage is requested [2,16]
      * 'groupCount' => int: the number of groups in an optional preliminary group stage (both groupSize and groupCount are required together) [2,64]
+     *
+     * Optional entries for leagues (may only be changed before starting a league):
+     * 'teamCount' => int: the number of teams / players to compete in the league
      */
     public function updateCompetition($type, $competitionId, $competitionInfo)
     {
@@ -439,10 +475,13 @@ class Pwned_Client
      * A scoring model can be configured with the following values.
      *
      * Required
-     *  'type' => string: Either 'league' or 'championship', depending on what kind of leagues this scoring model applies to.
+     *  'type' => string: Either 'league' or 'championship', depending on what kind of league this scoring model applies to.
      *  'name' => string: Display name of the scoring model, or a key to identify the scoring model in your own UI.
      *
      * Optional
+     *  'winPoints' => int: If leagueType is league, the number of points to give to a team/player for winning a match.
+     *  'drawPoints' => int: If leagueType is league, the number of points to give to both teams/players when playing a draw in a match.
+     *  'lossPoints' => int: If leagueType is league, the number of points to give to a team/player for losing a match (usually zero).
      *  'description' => string: A textual description of the scoring model. Can be applied together with name, where name is a key string and description contains a complete description / real name of the scoring model.
      *  'positionPoints' => array: An associative array with each position as key and the points given to that position as value. I.e. array( 1 => 30, 2 => 15, 3 => 5 );
      *
@@ -569,7 +608,7 @@ class Pwned_Client
      */
     public function getRanking($rankingId)
     {
-        return $this->request('rankings/' . $rankingId, 'GET');
+        return $this->getCompetition('ranking', $rankingId);
     }
 
     /**
