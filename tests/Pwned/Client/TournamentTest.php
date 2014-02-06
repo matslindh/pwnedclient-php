@@ -679,32 +679,10 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
                         $scoreOpponent = (int) !$alreadyRising;
                     }
 
-                    /*
-                    $brackets = $this->client->getTournamentBrackets($competition['id']);
-
-                    print("--|--");
-
-                    foreach ($brackets[0]['rounds'][0]['groups'] as $group)
-                    {
-                        foreach($group['standing'] as $standing)
-                        {
-                            var_dump($standing['rank'] . '. ' . $standing['signup']['id']);
-                        }
-
-                        var_dump('-----');
-                    }
-
-                    print("--|--"); */
-
                     $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
                         'score' => $score,
                         'scoreOpponent' => $scoreOpponent,
                     ));
-
-                    /*
-                    var_dump('sigId: ' . $match['signup']['id'] . ' : ' . $score);
-                    var_dump('oppId: ' . $match['signupOpponent']['id'] . ' : ' . $scoreOpponent);
-                    var_dump('---'); */
                 }
             }
         }
@@ -722,16 +700,8 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
         $this->assertCount(4, $sortedSignupIds);
 
         $brackets = $this->client->getTournamentBrackets($competition['id']);
-
         $this->assertNotEmpty($brackets[0]['finishedAt']);
         $this->assertCount(2, $brackets[1]['rounds'][0]['matches']);
-
-        /*
-        var_dump($sortedSignupIds);
-        var_dump($roundUpdated['groups'][0]['standing']);
-        var_dump($roundUpdated['groups'][1]['standing']);
-        var_dump($brackets[1]['rounds'][0]['matches']);
-        var_dump($competition['id']); */
 
         foreach ($brackets[1]['rounds'][0]['matches'] as $match)
         {
@@ -749,6 +719,105 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
 
         // the rest of the tournament should be identical to already completed tests.
         // add more testing if necessary later.
+    }
+
+    /**
+     * Tests group stages and progressing into tournament with uneven amount of groups / rank spots
+     */
+    public function testUnevenGroupStageAndProgression()
+    {
+        $tournament = $this->createNewTournamentForTests(array(
+            'name' => 'Uneven Group Size Test',
+            'tournamentType' => 'doubleelim',
+            'teamCount' => 8,
+            'groupCount' => 3,
+            'groupSize' => 4,
+        ));
+
+        $signups = $this->generateRandomSignups(12);
+        $this->client->addSignups($tournament['type'], $tournament['id'], $signups);
+        $this->client->startCompetition($tournament['type'], $tournament['id']);
+
+        $brackets = $this->client->getTournamentBrackets($tournament['id']);
+        $this->assertCount(4, $brackets);
+
+        $groupBracket = $brackets[0];
+        $round = $groupBracket['rounds'][0];;
+
+        foreach ($round['groups'] as $group)
+        {
+            foreach ($group['stages'] as $stage)
+            {
+                foreach ($stage['matches'] as $match)
+                {
+                    $this->client->updateMatch($tournament['type'], $tournament['id'], $match['id'], array(
+                        'score' => rand(1, 100),
+                        'scoreOpponent' => rand(101, 200),
+                    ));
+                }
+            }
+        }
+
+        $roundUpdated = $this->client->getRound($tournament['type'], $tournament['id'], 1, $groupBracket['name']);
+        $scoreEntries = array();
+
+        foreach ($roundUpdated['groups'] as $group)
+        {
+            foreach ($group['standing'] as $standing)
+            {
+                $scoreEntries[] = $standing;
+            }
+        }
+
+        usort($scoreEntries, function ($a, $b) {
+            $fields = array('rank' => 'ASC', 'points' => 'DESC', 'score' => 'DESC', 'wins' => 'DESC');
+
+            foreach ($fields as $field => $direction)
+            {
+                if ($a[$field] != $b[$field])
+                {
+                    if ($direction == 'ASC')
+                    {
+                        return $a[$field] - $b[$field];
+                    }
+                    else
+                    {
+                        return $b[$field] - $a[$field];
+                    }
+                }
+            }
+
+            return 0;
+        });
+
+        $expectedEntries = array_slice($scoreEntries, 0, 8);
+        $expectedSignupIds = array();
+
+        foreach ($expectedEntries as $entry)
+        {
+            $expectedSignupIds[$entry['signup']['id']] = true;
+        }
+
+        $brackets = $this->client->getTournamentBrackets($tournament['id']);
+        $groupBracket = $brackets[0];
+        $eliminationBracket = $brackets[1];
+
+        $this->assertNotEmpty($groupBracket['finishedAt']);
+        $this->assertCount(4, $eliminationBracket['rounds'][0]['matches']);
+
+        foreach ($eliminationBracket['rounds'][0]['matches'] as $match)
+        {
+            $this->assertNotEmpty($match['signup']);
+            $this->assertNotEmpty($match['signupOpponent']);
+
+            $this->assertArrayHasKey($match['signup']['id'], $expectedSignupIds);
+            $this->assertArrayHasKey($match['signupOpponent']['id'], $expectedSignupIds);
+
+            unset($expectedSignupIds[$match['signup']['id']]);
+            unset($expectedSignupIds[$match['signupOpponent']['id']]);
+        }
+
+        $this->assertEmpty($expectedSignupIds);
     }
 
     /**
@@ -783,7 +852,6 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
             }
         }
 
-        //$this->printBrackets($this->client->getTournamentBrackets($competition['id']));
         $round = $this->client->getRound($competition['type'], $competition['id'], 2, 'winner');
 
         foreach ($round['matches'] as $match)
@@ -824,6 +892,22 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
             $this->assertNotEmpty($match['signup']);
             $this->assertNotEmpty($match['signupOpponent']);
         }
-        //$this->printBrackets($this->client->getTournamentBrackets($competition['id']));
+    }
+
+    public function testPopulatedUnfinishedMatches()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'Complete Double Elimination Tournament Test',
+            'tournamentType' => 'doubleelim',
+            'teamCount' => 8,
+            'playersOnTeam' => 1,
+        ));
+
+        $rounds = $this->client->getRounds('tournament', $competition['id'], 'winner');
+
+        foreach ($rounds as $round)
+        {
+            $this->assertEquals(count($round['matches']), $round['unfinishedMatches']);
+        }
     }
 }
