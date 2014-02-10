@@ -320,4 +320,17 @@ class Pwned_Client_CompetitionTest extends Pwned_ClientTestAbstract
             }
         }
     }
+
+    /**
+     * Test that we get an error if we try to retrieve a competition with the wrong type (from the wrong endpoint).
+     */
+    public function testRetrieveWrongCompetitionEndPoint()
+    {
+        $competition = $this->createNewTournamentForTests();
+
+        $this->client->disableDebugging();
+        $fetched = $this->client->getCompetition('league', $competition['id']);
+        $this->client->enableDebugging();
+        $this->assertEmpty($fetched);
+    }
 }
