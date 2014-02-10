@@ -830,13 +830,83 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         $competition = $this->createLeagueWithSignupsAndStartIt(array(
         ));
 
-        $rounds = $this->client->getRounds('tournament', $competition['id'], 'winner');
+        $rounds = $this->client->getRounds('league', $competition['id']);
         $this->assertNotEmpty($rounds);
 
         foreach ($rounds as $round)
         {
             $this->assertEquals(count($round['matches']), $round['unfinishedMatches']);
         }
+    }
+
+    /**
+     * Confirm that each team only plays each other once
+     */
+    public function testValidLeagueSetup()
+    {
+        $competition = $this->createLeagueWithSignupsAndStartIt(array(
+            'teamCount' => 8,
+        ));
+
+        $playsEachOther = array();
+        $rounds = $this->client->getRounds('league', $competition['id']);
+        $this->assertCount(7, $rounds);
+
+       foreach ($rounds as $round)
+       {
+           foreach ($round['matches'] as $match)
+           {
+               $lesser = min($match['signup']['id'], $match['signupOpponent']['id']);
+               $larger = max($match['signup']['id'], $match['signupOpponent']['id']);
+
+               $this->assertTrue(empty($playsEachOther[$lesser][$larger]), "Two teams have played each other before: " . $match['signup']['name'] . ' vs ' . $match['signupOpponent']['name']);
+               $playsEachOther[$lesser][$larger] = true;
+           }
+       }
+    }
+
+    /**
+     * Test that we get the correct number of matches for a league with an un-even number of teams.
+     */
+    public function testUnevenSignupCountForLeague()
+    {
+        $competition = $this->createLeagueWithSignupsAndStartIt(array(
+            'teamCount' => 7,
+        ));
+
+        $signups = $this->client->getSignups('league', $competition['id']);
+        $rounds = $this->client->getRounds('league', $competition['id']);
+
+        $walkoverSignupIds = array();
+
+        foreach ($signups as $signup)
+        {
+            $walkoverSignupIds[$signup['id']] = true;
+        }
+
+        $this->assertCount(7, $rounds);
+
+        foreach ($rounds as $round)
+        {
+            $this->assertCount(4, $round['matches']);
+
+            foreach ($round['matches'] as $match)
+            {
+                if (!$match['signup'])
+                {
+                    $this->assertNotEmpty($walkoverSignupIds[$match['signupOpponent']['id']]);
+                    unset($walkoverSignupIds[$match['signupOpponent']['id']]);
+                }
+
+                if (!$match['signupOpponent'])
+                {
+                    $this->assertNotEmpty($walkoverSignupIds[$match['signup']['id']]);
+                    unset($walkoverSignupIds[$match['signup']['id']]);
+                }
+            }
+        }
+
+        $this->assertEmpty($walkoverSignupIds);
     }
 
     /**
