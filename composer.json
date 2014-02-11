@@ -1,7 +1,7 @@
 {
   "name": "pwned/pwnedclient",
   "type": "library",
-  "description": "Client for accessing the pwned.no API for handling different competitions.",
+  "description": "Client for accessing the pwned.no API for handling competitions.",
   "keywords": [ "tournaments", "leagues", "competitions", "rankings", "ladders" ],
   "homepage": "http://www.pwned.no/",
   "license": "MIT",
