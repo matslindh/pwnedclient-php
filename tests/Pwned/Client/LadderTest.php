@@ -89,6 +89,45 @@ class Pwned_Client_LadderTest extends Pwned_ClientTestAbstract
     }
 
     /**
+     * Test that adding match scores to a ladder works, and that the ranks change accordingly.
+     */
+    public function testLadderAddMatch()
+    {
+        $ladder = $this->createNewLadderForTests(array(
+            'name' => 'Ladder ' . uniqid(),
+            'scoringModel' => 'glicko2',
+        ));
+
+        $signups = $this->generateRandomSignups(8);
+        $this->client->addSignups($ladder['type'], $ladder['id'], $signups);
+        $this->client->addLadderMatch($ladder['id'], array(
+            'remoteId' => $signups[3]['remoteId'],
+            'remoteIdOpponent' => $signups[5]['remoteId'],
+            'score' => 5,
+            'scoreOpponent' => 15,
+        ));
+
+        $ranking = $this->client->getLadderRanking($ladder['id']);
+        $this->assertCount(8, $ranking);
+
+        foreach ($ranking as $idx => $rank)
+        {
+            if ($idx == 0)
+            {
+                $this->assertLessThan($rank['score'], 1500);
+            }
+            else if ($idx < 7)
+            {
+                $this->assertEquals(1500, $rank['score']);
+            }
+            else
+            {
+                $this->assertLessThan(1500, $rank['score']);
+            }
+        }
+    }
+
+    /**
      * Internal method to create a ladder across test methods.
      *
      * @param array $competitionInput To change any default values, supply better information here.

@@ -271,18 +271,26 @@ class Pwned_Client_RankingTest extends Pwned_ClientTestAbstract
 
         $this->client->removeRankingEntry($ranking['id'], $first['id']);
 
-        $best = $this->client->getRankingEntries($ranking['id'], array('remoteId' => 203));
-
-        var_dump($second); var_dump($best);
+        $best = $this->client->getRankingEntries($ranking['id'], array('remoteId' => 203))[0];
 
         $this->assertEquals($second['id'], $best['id']);
         $this->assertEquals($second['value'], $best['value']);
 
         $this->client->removeRankingEntry($ranking['id'], $second['id']);
 
-        $best = $this->client->getRankingEntries($ranking['id'], array('remoteId' => 203));
+        $best = $this->client->getRankingEntries($ranking['id'], array('remoteId' => 203))[0];
         $this->assertEquals($third['id'], $best['id']);
         $this->assertEquals($third['value'], $best['value']);
+    }
+
+    public function testGetRanking()
+    {
+        $ranking = $this->createNewRankingForTests();
+
+        $rankingFetched = $this->client->getRanking($ranking['id']);
+
+        $this->assertEquals($ranking['id'], $rankingFetched['id']);
+        $this->assertEquals($ranking['name'], $rankingFetched['name']);
     }
 
     /**

@@ -172,39 +172,6 @@ class Pwned_Client
         return $this->request('leagues', 'POST', $leagueInfo);
     }
 
-   /**
-     * Create a Ladder
-     *
-     * Supported entries:
-     * 'name' => string: The title of the ladder
-     * 'scoringModel' => string: The scoring model of the ladder (valid values: glicko2, elo)
-     * 'gameId' => int: The integer id of the game type of the ladder
-     * 'playersOnTeam' => int: The number of players on each team in the ladder
-     *
-     * Optional entries:
-     * 'description' => string: The description of the ladder; a subset of HTML is supported and is purified after being submitted.
-     */
-    public function createLadder($ladderInfo)
-    {
-        return $this->request('ladders', 'POST', $ladderInfo);
-    }
-
-   /**
-     * Create a Ranking
-     *
-     * Supported entries:
-     * 'name' => string: The title of the ladder
-     *
-     * Optional entries:
-     * 'description' => string: The description of the ladder; a subset of HTML is supported and is purified after being submitted.
-     * 'gameId' => int: The integer id of the game type of the ladder
-     * 'playersOnTeam' => int: The number of players on each team in the ladder
-     */
-    public function createRanking($rankingInfo)
-    {
-        return $this->request('rankings', 'POST', $rankingInfo);
-    }
-
     /**
      * Get base information for a competition.
      *
@@ -588,16 +555,20 @@ class Pwned_Client
         return $this->post('bundles/' . $bundleId, $settings);
     }
 
-    /**
-     * Get the current ranking list for a ladder
+   /**
+     * Create a Ranking
      *
-     * @param int $ladderId The id of the ladder to retrieve the current ranking for
-     * @param int $offset The offset of ranking list to fetch
-     * @param int $hits How many elements to retrieve of the ranking list
+     * Supported entries:
+     * 'name' => string: The title of the ranking
+     *
+     * Optional entries:
+     * 'description' => string: The description of the ranking; a subset of HTML is supported and is purified after being submitted.
+     * 'gameId' => int: The integer id of the game type of the ranking
+     * 'playersOnTeam' => int: The number of players on each team in the ranking
      */
-    public function getLadderRanking($ladderId, $offset = 0, $hits = 150)
+    public function createRanking($rankingInfo)
     {
-        return $this->request('ladders/' . $ladderId . '/ranking', 'GET');
+        return $this->request('rankings', 'POST', $rankingInfo);
     }
 
     /**
@@ -676,6 +647,46 @@ class Pwned_Client
     public function getRankingEntriesAroundRemoteId($rankingId, $remoteId, $hits = 5)
     {
         return $this->get('rankings/' . $rankingId . '/entries', array('aroundRemoteId' => $remoteId, 'hits' => $hits));
+    }
+
+   /**
+     * Create a Ladder
+     *
+     * Supported entries:
+     * 'name' => string: The title of the ladder
+     * 'scoringModel' => string: The scoring model of the ladder (valid values: glicko2, elo)
+     * 'gameId' => int: The integer id of the game type of the ladder
+     * 'playersOnTeam' => int: The number of players on each team in the ladder
+     *
+     * Optional entries:
+     * 'description' => string: The description of the ladder; a subset of HTML is supported and is purified after being submitted.
+     */
+    public function createLadder($ladderInfo)
+    {
+        return $this->request('ladders', 'POST', $ladderInfo);
+    }
+
+    /**
+     * Get the current ranking list for a ladder
+     *
+     * @param int $ladderId The id of the ladder to retrieve the current ranking for
+     * @param int $offset The offset of ranking list to fetch
+     * @param int $hits How many elements to retrieve of the ranking list
+     */
+    public function getLadderRanking($ladderId, $offset = 0, $hits = 150)
+    {
+        return $this->request('ladders/' . $ladderId . '/ranking', 'GET');
+    }
+
+    /**
+     * Add a played match to a ladder.
+     *
+     * @param int $ladderId The ladder for the match.
+     * @param array $matchData An array containing 'score' and 'scoreOpponent' as keys, and either 'signupId' or 'remoteId' to identify the first team/player and 'signupIdOpponent' or 'remoteIdOpponent' to identify the second.
+     */
+    public function addLadderMatch($ladderId, $matchData)
+    {
+        return $this->post('ladders/' . $ladderId . '/matches', $matchData);
     }
 
     /**

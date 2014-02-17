@@ -889,6 +889,8 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         foreach ($rounds as $round)
         {
             $this->assertCount(4, $round['matches']);
+            $this->assertEquals(3, $round['unfinishedMatches']);
+            $this->assertEquals(1, $round['finishedMatches']);
 
             foreach ($round['matches'] as $match)
             {
