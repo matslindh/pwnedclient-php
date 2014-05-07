@@ -506,6 +506,26 @@ class Pwned_Client
     }
 
     /**
+     * Retire a signup / player / team from a league.
+     *
+     * Retiring a player or team will remove all past, present and future matches for the player. All scores, points, wins, etc. will
+     * be removed from both parties competing in a match, and it will be like the played never signed up in the first place - except
+     * for still being present in the ranking (with a retired: true flag set).
+     *
+     * If you want to give the player's opponents walkovers instead of removing all matches, retrieve the matches for the league
+     * and update the results for each match manually (for now, at least. Make a feature request if needed).
+     * If you want to give the other players
+     *
+     * @param int $leagueId The id of the league to modify
+     * @param int $signupId The signup to retire from the league.
+     * @return boolean
+     */
+    public function retireLeagueSignup($leagueId, $signupId)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('retire' => true));
+    }
+
+    /**
      * Create a new bundle - a container if you want to group several competitions (for divisions, playoffs, etc.).
      *
      * The allowed keys in $settings:

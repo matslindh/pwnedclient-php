@@ -192,4 +192,16 @@ class Pwned_ClientTestAbstract extends PHPUnit_Framework_TestCase
             print("\n\n");
         }
     }
+
+    public function printTable($table)
+    {
+        print("\n");
+
+        foreach ($table as $entry)
+        {
+            $status = $entry['signup']['retired'] ? 'retired' : 'active';
+
+            print($entry['position'] . '. (' . $entry['wins'] . '/' . $entry['draws'] . '/' . $entry['losses'] . ') ' . $entry['signup']['name'] . ' (' . $entry['signup']['id'] . ') (' . $entry['points'] . ' points) (' . $status . ")\n");
+        }
+    }
 }
