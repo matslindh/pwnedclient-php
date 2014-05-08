@@ -999,14 +999,12 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
 
         $table = $this->client->getLeagueTable($league['id']);
         $this->assertCount(7, $table);
-        $this->printTable($table);
 
         // retire number three in ranking
         $this->client->retireLeagueSignup($league['id'], $table[2]['signup']['id']);
 
         $newTable = $this->client->getLeagueTable($league['id']);
         $this->assertCount(7, $newTable);
-        $this->printTable($newTable);
 
         // assert the previous player is dead last (other players may have moved around "randomly", so we just test this..
         $this->assertEquals($table[2]['signup']['id'], $newTable[6]['signup']['id']);
