@@ -970,6 +970,66 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
     }
 
     /**
+     * Test that we can retire an existing player / team from a league and that the stats gets updated.
+     */
+    public function testRetirePlayerAndMatchesInUnevenSetup()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt(array(
+            'teamCount' => 7,
+        ));
+
+        $signups = $this->client->getSignups('league', $league['id']);
+        $rounds = $this->client->getRounds('league', $league['id']);
+
+        $this->assertCount(7, $rounds);
+
+        foreach (array_slice($rounds, 0, 3) as $round)
+        {
+            foreach ($round['matches'] as $match)
+            {
+                $score = rand(1,1000);
+                $scoreOpponent = rand(1,1000);
+
+                $this->client->updateMatch($league['type'], $league['id'], $match['id'], array(
+                    'score' => $score,
+                    'scoreOpponent' => $scoreOpponent,
+                ));
+            }
+        }
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertCount(7, $table);
+        $this->printTable($table);
+
+        // retire number three in ranking
+        $this->client->retireLeagueSignup($league['id'], $table[2]['signup']['id']);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertCount(7, $newTable);
+        $this->printTable($newTable);
+
+        // assert the previous player is dead last (other players may have moved around "randomly", so we just test this..
+        $this->assertEquals($table[2]['signup']['id'], $newTable[6]['signup']['id']);
+
+        // assert the player was retired
+        $this->assertTrue($newTable[6]['signup']['retired']);
+        $this->assertEquals(0, $newTable[6]['wins']);
+        $this->assertEquals(0, $newTable[6]['draws']);
+        $this->assertEquals(0, $newTable[6]['losses']);
+        $this->assertEquals(0, $newTable[6]['played']);
+        $this->assertEquals(0, $newTable[6]['scoreFor']);
+        $this->assertEquals(0, $newTable[6]['scoreAgainst']);
+        $this->assertEquals(0, $newTable[6]['score']);
+        $this->assertEquals(0, $newTable[6]['points']);
+
+        // check that we have corrected the scores for the other teams / players as well
+        foreach ($newTable as $entry)
+        {
+            $this->assertEquals($entry['wins'] * 3 + $entry['draws'], $entry['points']);
+        }
+    }
+
+    /**
      * Internal method to create a league across test methods.
      *
      * @param array $competitionInput To change any default values, supply better information here.
