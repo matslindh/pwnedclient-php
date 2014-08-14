@@ -223,7 +223,7 @@ class Pwned_Client_CompetitionTest extends Pwned_ClientTestAbstract
      */
     public function testReplaceSignup($competitionAndSignups)
     {
-        // wether the correct match replacements happen is not a client test, so we'll just test that the method completes OK
+        // wether the correct match replacements happen is not a general test, so we'll just test that the method completes OK
         $competition = $competitionAndSignups['competition'];
         $signups = $competitionAndSignups['signups'];
         $this->assertNotEmpty($signups);
