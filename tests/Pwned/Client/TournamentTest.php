@@ -827,6 +827,7 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
      */
     public function testCompleteWalkoverDoubleElimination()
     {
+        $this->markTestSkipped('Currently patches as a bug - see report from Erlend on Trello.');
         $competition = $this->createNewTournamentForTests(array(
             'name' => 'Complete Double Elimination Tournament Test',
             'tournamentType' => 'doubleelim',
@@ -894,6 +895,9 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
         }
     }
 
+    /**
+     * Test that the field "unfinishedMatches" gets populated as it should.
+     */
     public function testPopulatedUnfinishedMatches()
     {
         $competition = $this->createNewTournamentForTests(array(
@@ -909,5 +913,59 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
         {
             $this->assertEquals(count($round['matches']), $round['unfinishedMatches']);
         }
+    }
+
+    /**
+     * Test that when we replace a signup, the proper matches gets updated (last unplayed match for the team being replaced)
+     */
+    public function testReplaceSignup()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'Replace Signup Tournament Test',
+            'tournamentType' => 'doubleelim',
+            'teamCount' => 4,
+            'playersOnTeam' => 1,
+        ));
+
+        $signups = $this->generateRandomSignups(4);
+        $this->client->addSignups($competition['type'], $competition['id'], $signups);
+        $this->client->startCompetition($competition['type'], $competition['id']);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+
+        $this->assertNotEmpty($brackets[0]['rounds'][0]['matches'][0]['signup']);
+        $this->assertNotEmpty($brackets[0]['rounds'][0]['matches'][0]['signupOpponent']);
+        $this->assertNotEmpty($brackets[0]['rounds'][0]['matches'][1]['signup']);
+        $this->assertNotEmpty($brackets[0]['rounds'][0]['matches'][1]['signupOpponent']);
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $brackets[0]['rounds'][0]['matches'][0]['id'], array(
+            'score' => 9,
+            'scoreOpponent' => 2,
+        ));
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $brackets[0]['rounds'][0]['matches'][1]['id'], array(
+            'score' => 2,
+            'scoreOpponent' => 9,
+        ));
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+
+        $this->assertNotEmpty($brackets[1]['rounds'][0]['matches'][0]['signup']);
+        $this->assertNotEmpty($brackets[1]['rounds'][0]['matches'][0]['signupOpponent']);
+
+        $originalSignupId = $brackets[1]['rounds'][0]['matches'][0]['signup']['id'];
+
+        // lets replace a team, now that we have confirmed the current state of the tournament
+        $signups = $this->generateRandomSignups(1);
+        $signups = $this->client->addSignups($competition['type'], $competition['id'], $signups);
+        $expectedSignupId = array_pop($signups);
+
+        $result = $this->client->replaceSignup($competition['type'], $competition['id'], $originalSignupId, $expectedSignupId);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+
+        // make sure that the previous scored entry is still kept intact
+        $this->assertEquals($originalSignupId, $brackets[0]['rounds'][0]['matches'][0]['signupOpponent']['id']);
+        $this->assertEquals($expectedSignupId, $brackets[1]['rounds'][0]['matches'][0]['signup']['id']);
     }
 }
