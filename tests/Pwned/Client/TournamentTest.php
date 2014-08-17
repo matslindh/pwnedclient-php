@@ -968,4 +968,53 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
         $this->assertEquals($originalSignupId, $brackets[0]['rounds'][0]['matches'][0]['signupOpponent']['id']);
         $this->assertEquals($expectedSignupId, $brackets[1]['rounds'][0]['matches'][0]['signup']['id']);
     }
+
+    /**
+     * Test that we're able to put signups into certain slots if we want to.
+     */
+    public function testManualSignupPlacementBeforeStart()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'Direct Placement Tournament Test',
+            'tournamentType' => 'doubleelim',
+            'teamCount' => 4,
+            'playersOnTeam' => 1,
+        ));
+
+        $signups = $this->generateRandomSignups(4);
+        $signupIds = $this->client->addSignups($competition['type'], $competition['id'], $signups);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+        $matches = $brackets[0]['rounds'][0]['matches'];
+
+        $firstSignupId = array_shift($signupIds);
+        $secondSignupId = array_pop($signupIds);
+
+        $this->client->forceSignupIntoMatchSlot($competition['type'], $competition['id'], $matches[0]['id'], $firstSignupId, Pwned_Client::MATCH_SLOT_PRIMARY);
+        $this->client->forceSignupIntoMatchSlot($competition['type'], $competition['id'], $matches[1]['id'], $secondSignupId, Pwned_Client::MATCH_SLOT_OPPONENT);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+        $this->assertEquals(1, $brackets[0]['roundCurrent']);
+        $matches = $brackets[0]['rounds'][0]['matches'];
+
+        $this->assertEquals($firstSignupId, $matches[0]['signup']['id']);
+        $this->assertEmpty($matches[0]['signupOpponent']);
+        $this->assertEquals($secondSignupId, $matches[1]['signupOpponent']['id']);
+        $this->assertEmpty($matches[1]['signup']);
+
+        $this->client->startCompetition($competition['type'], $competition['id']);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+        $matches = $brackets[0]['rounds'][0]['matches'];
+
+        $this->assertEquals($firstSignupId, $matches[0]['signup']['id']);
+        $this->assertNotEmpty($matches[0]['signupOpponent']);
+        $this->assertNotEquals($firstSignupId, $matches[0]['signupOpponent']['id']);
+        $this->assertNotEquals($secondSignupId, $matches[0]['signupOpponent']['id']);
+
+        $this->assertEquals($secondSignupId, $matches[1]['signupOpponent']['id']);
+        $this->assertNotEmpty($matches[1]['signup']);
+        $this->assertNotEquals($firstSignupId, $matches[1]['signup']['id']);
+        $this->assertNotEquals($secondSignupId, $matches[1]['signup']['id']);
+    }
 }

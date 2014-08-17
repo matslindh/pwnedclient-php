@@ -11,6 +11,9 @@ class Pwned_Client
     protected $debugEnabled = false;
     protected $errorCallback = null;
 
+    const MATCH_SLOT_PRIMARY = 'primary';
+    const MATCH_SLOT_OPPONENT = 'opponent';
+
     public function __construct($url, $publicKey, $privateKey)
     {
         $this->setURL($url);
@@ -384,6 +387,32 @@ class Pwned_Client
     public function updateMatch($type, $competitionId, $matchId, $matchData)
     {
         return $this->request($type . 's/' . $competitionId . '/matches/' . $matchId, 'POST', $matchData);
+    }
+
+    /**
+     * Force a signup to take a certain spot in a match
+     *
+     * @param string $type
+     * @param int $competitionId
+     * @param int $matchId
+     * @param int $signupId
+     * @param string $slot Use the MATCH_SLOT_* constants to provide a value.
+     */
+    public function forceSignupIntoMatchSlot($type, $competitionId, $matchId, $signupId, $slot = self::MATCH_SLOT_PRIMARY)
+    {
+        switch ($slot)
+        {
+            case self::MATCH_SLOT_PRIMARY:
+                $this->updateMatch($type, $competitionId, $matchId, array(
+                    'signupId' => $signupId,
+                ));
+                break;
+            case self::MATCH_SLOT_OPPONENT:
+                $this->updateMatch($type, $competitionId, $matchId, array(
+                    'signupIdOpponent' => $signupId,
+                ));
+                break;
+        }
     }
 
     /**
