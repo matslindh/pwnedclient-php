@@ -270,9 +270,45 @@ class Pwned_Client_CompetitionTest extends Pwned_ClientTestAbstract
     }
 
     /**
-     * Test storage of match results.
+     * Test storage of a walkover result
      */
-    public function testUpdateMatch()
+    public function testUpdateMatchWalkoverUndo()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'MatchTest',
+            'teamCount' => 4,
+            'playersOnTeam' => 1,
+            'gameId' => 1,
+        ));
+
+        $signups = $this->generateRandomSignups(4);
+        $this->client->addSignups($competition['type'], $competition['id'], $signups);
+
+        // start tournament
+        $this->client->startCompetition($competition['type'], $competition['id']);
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => 'signupOpponent',
+        ));
+
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertTrue($match['isWalkover']);
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => false,
+        ));
+
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertNull($match['score']);
+        $this->assertNull($match['scoreOpponent']);
+        $this->assertFalse($match['isWalkover']);
+    }
+
+    /**
+     * Test storage of a walkover result
+     */
+    public function testUpdateMatchWalkover()
     {
         $competition = $this->createNewTournamentForTests(array(
             'name' => 'MatchTest',
@@ -287,39 +323,18 @@ class Pwned_Client_CompetitionTest extends Pwned_ClientTestAbstract
         // start tournament
         $this->client->startCompetition($competition['type'], $competition['id']);
 
-        $rounds = $this->client->getRounds($competition['type'], $competition['id'], 'winner');
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
 
-        $this->assertCount(2, $rounds);
-        $scores = array();
-        $matchesUpdated = 0;
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => 'signupOpponent',
+        ));
 
-        foreach ($rounds as $round)
-        {
-            foreach ($round['matches'] as $match)
-            {
-                $scores[$match['id']] = array(
-                    'score' => rand(1, 50),
-                    'scoreOpponent' => rand(1, 50),
-                );
-
-                $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], $scores[$match['id']]);
-                $matchesUpdated++;
-            }
-        }
-
-        $this->assertEquals($competition['teamCount'] - 1, $matchesUpdated);
-
-        $rounds = $this->client->getRounds($competition['type'], $competition['id'], 'winner');
-
-        foreach ($rounds as $round)
-        {
-            foreach ($round['matches'] as $match)
-            {
-                $this->assertEquals($scores[$match['id']]['score'], $match['score']);
-                $this->assertEquals($scores[$match['id']]['scoreOpponent'], $match['scoreOpponent']);
-            }
-        }
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertEquals(0, $match['score']);
+        $this->assertEquals(1, $match['scoreOpponent']);
+        $this->assertTrue($match['isWalkover']);
     }
+
 
     /**
      * Test that we get an error if we try to retrieve a competition with the wrong type (from the wrong endpoint).
