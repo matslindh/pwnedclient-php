@@ -387,6 +387,66 @@ class Pwned_Client_CompetitionTest extends Pwned_ClientTestAbstract
         $this->assertTrue($match['isWalkover']);
     }
 
+    /**
+     * Test that we can store an optional score together with the walkover state.
+     */
+    public function testUpdateMatchWalkoverWithScore()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'MatchTest',
+            'teamCount' => 4,
+            'playersOnTeam' => 1,
+            'gameId' => 1,
+        ));
+
+        $signups = $this->generateRandomSignups(4);
+        $this->client->addSignups($competition['type'], $competition['id'], $signups);
+
+        // start tournament
+        $this->client->startCompetition($competition['type'], $competition['id']);
+
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => 'signupOpponent',
+            'score' => 0,
+            'scoreOpponent' => 15,
+        ));
+
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertEquals(0, $match['score']);
+        $this->assertEquals(15, $match['scoreOpponent']);
+        $this->assertTrue($match['isWalkover']);
+
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => false,
+        ));
+
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertNull($match['score']);
+        $this->assertNull($match['scoreOpponent']);
+        $this->assertFalse($match['isWalkover']);
+
+        // this will trigger an error, so we unbind the error handler..
+        $handler = $this->client->getErrorCallback();
+        $this->client->setErrorCallback(null);
+
+        // try to set the score to an invalid score for the walkover value..
+        $this->client->updateMatch($competition['type'], $competition['id'], $match['id'], array(
+            'walkover' => 'signupOpponent',
+            'score' => 15,
+            'scoreOpponent' => 0,
+        ));
+
+        // reset the error callback
+        $this->client->setErrorCallback($handler);
+
+        // make sure the match wasn't updated.
+        $match = $this->client->getRound($competition['type'], $competition['id'], 1, 'winner')['matches'][0];
+        $this->assertNull($match['score']);
+        $this->assertNull($match['scoreOpponent']);
+        $this->assertFalse($match['isWalkover']);
+    }
 
     /**
      * Test that we get an error if we try to retrieve a competition with the wrong type (from the wrong endpoint).
