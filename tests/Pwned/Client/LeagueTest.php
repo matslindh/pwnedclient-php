@@ -1028,6 +1028,47 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
     }
 
     /**
+     * Test that setting a match as a walkover, then unsetting the walkover value updates the correct score.
+     */
+    public function testCorrectPointHandlingForWalkovers()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt(array(
+            'teamCount' => 4,
+        ));
+
+        $signups = $this->client->getSignups('league', $league['id']);
+        $round = $this->client->getRounds('league', $league['id'])[0];
+        $match = $round['matches'][0];
+
+        $this->client->updateMatch($league['type'], $league['id'], $match['id'], array(
+            'walkover' => 'signup',
+        ));
+
+        $table = $this->client->getLeagueTable($league['id']);
+
+        $this->assertEquals(1, $table[0]['wins']);
+        $this->assertEquals(0, $table[1]['wins']);
+        $this->assertEquals(0, $table[2]['wins']);
+        $this->assertEquals(0, $table[3]['wins']);
+        $this->assertEquals(1, $table[3]['losses']);
+
+        $this->client->updateMatch($league['type'], $league['id'], $match['id'], array(
+            'walkover' => false,
+        ));
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $fields = array('wins', 'draws', 'losses', 'played', 'score', 'scoreFor', 'scoreAgainst', 'points');
+
+        foreach ($table as $entry)
+        {
+            foreach ($fields as $field)
+            {
+               $this->assertEquals(0, $entry[$field]);
+            }
+        }
+    }
+
+    /**
      * Internal method to create a league across test methods.
      *
      * @param array $competitionInput To change any default values, supply better information here.
