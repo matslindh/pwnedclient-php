@@ -69,7 +69,7 @@ class Pwned_Client
     /**
      * Get the callback function which is called if an error occurs
      *
-     * @return function
+     * @return Callable
      */
     public function getErrorCallback()
     {
@@ -79,7 +79,7 @@ class Pwned_Client
     /**
      * Set the callback to use if an error occurs.
      *
-     * @param function $errorCallback
+     * @param Callable $errorCallback
      */
     public function setErrorCallback($errorCallback)
     {
@@ -145,7 +145,7 @@ class Pwned_Client
      * 'description' => string: The description of the tournament; a subset of HTML is supported and is purified after being submitted.
      * 'groupCount' => int: the number of groups in the preliminary stage
      * 'groupSize' => int: the size of the groups in the preliminary stage
-     * 'quickProgress' => boolean: Wether the tournament should use the "quick progress" format where teams are moved to the next round as soon as a result is entered. This defaults to true.
+     * 'quickProgress' => boolean: Whether the tournament should use the "quick progress" format where teams are moved to the next round as soon as a result is entered. This defaults to true.
      */
     public function createTournament($tournamentInfo)
     {
@@ -180,7 +180,7 @@ class Pwned_Client
      *
      * @param string $type
      * @param int $competitionId
-     * @return type array
+     * @return array
      */
     public function getCompetition($type, $competitionId)
     {
@@ -191,7 +191,7 @@ class Pwned_Client
      * Retrieve information about a league. Alias for getCompetition('league', ..);
      *
      * @param int $leagueId ID of the league to retrieve.
-     * @return type array
+     * @return array
      */
     public function getLeague($leagueId)
     {
@@ -202,7 +202,7 @@ class Pwned_Client
      * Retrieve information about a tournament. Alias for getCompetition('tournament', ..);
      *
      * @param int $tournamentId ID of the tournament to retrieve.
-     * @return type array
+     * @return array
      */
     public function getTournament($tournamentId)
     {
@@ -213,7 +213,7 @@ class Pwned_Client
      * Retrieve information about a league. Alias for getCompetition('ladder', ..);
      *
      * @param int $ladderId ID of the ladder to retrieve.
-     * @return type array
+     * @return array
      */
     public function getLadder($ladderId)
     {
@@ -507,6 +507,7 @@ class Pwned_Client
      * Remove an existing scoring model (set the scoring model as not active, as it might still be referenced by existing leagues).
      *
      * @param int $scoringModelId Id of the scoring model to remove.
+     * @return boolean
      */
     public function deleteLeagueScoringModel($scoringModelId)
     {
@@ -552,6 +553,78 @@ class Pwned_Client
     public function retireLeagueSignup($leagueId, $signupId)
     {
         return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('retire' => true));
+    }
+
+    /**
+     * Add penalty points to a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function addLeagueScorePenaltyPoints($leagueId, $signupId, $pointsToAdd)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('addPenaltyPoints' => $pointsToAdd));
+    }
+
+    /**
+     * Subtract penalty points to a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function subtractLeagueScorePenaltyPoints($leagueId, $signupId, $pointsToSubtract)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('subtractPenaltyPoints' => $pointsToSubtract));
+    }
+
+    /**
+     * Set penalty points for a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function setLeagueScorePenaltyPoints($leagueId, $signupId, $penaltyPoints)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('setPenaltyPoints' => $penaltyPoints));
+    }
+
+    /**
+     * Add bonus points to a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function addLeagueScoreBonusPoints($leagueId, $signupId, $pointsToAdd)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('addBonusPoints' => $pointsToAdd));
+    }
+
+    /**
+     * Subtract bonus points to a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function subtractLeagueScoreBonusPoints($leagueId, $signupId, $pointsToSubtract)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('subtractBonusPoints' => $pointsToSubtract));
+    }
+
+    /**
+     * Set bonus points for a signup in a league.
+     *
+     * @param int $leagueId The id of the league that contains the signup
+     * @param int $signupId The signup which should receive the penalty.
+     * @return boolean
+     */
+    public function setLeagueScoreBonusPoints($leagueId, $signupId, $bonusPoints)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('setBonusPoints' => $bonusPoints));
     }
 
     /**

@@ -1017,4 +1017,83 @@ class Pwned_Client_TournamentTest extends Pwned_ClientTestAbstract
         $this->assertNotEquals($firstSignupId, $matches[1]['signup']['id']);
         $this->assertNotEquals($secondSignupId, $matches[1]['signup']['id']);
     }
+
+    /**
+     * Test that we're able to put signups into certain slots if we want to.
+     */
+    public function testManualSignupPlacementFromWaitingList()
+    {
+        $competition = $this->createNewTournamentForTests(array(
+            'name' => 'Direct Placement Tournament Test',
+            'tournamentType' => 'doubleelim',
+            'teamCount' => 4,
+            'playersOnTeam' => 1,
+        ));
+
+        $signups = $this->generateRandomSignups(3);
+        $signupIds = $this->client->addSignups($competition['type'], $competition['id'], $signups);
+        $this->client->startCompetition($competition['type'], $competition['id']);
+
+        $newSignupIds = $this->client->addSignups($competition['type'], $competition['id'],array(array(
+                'name' => 'Placement',
+                'isAccepted' => true,
+                'onWaitingList' => true,
+                'contact' => uniqid('Contact ', true),
+                'remoteId' => rand(1, 100000000),
+            ))
+        );
+
+        $signupId = array_pop($newSignupIds);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+        $matches = $brackets[0]['rounds'][0]['matches'];
+        $matchId = $spot = null;
+
+        foreach ($matches as $match)
+        {
+            if (empty($match['signup']))
+            {
+                $matchId = $match['id'];
+                $slot = Pwned_Client::MATCH_SLOT_PRIMARY;
+                break;
+            }
+
+            if (empty($match['signupOpponent']))
+            {
+                $matchId = $match['id'];
+                $slot = Pwned_Client::MATCH_SLOT_OPPONENT;
+                break;
+            }
+        }
+
+        $this->assertNotEmpty($matchId);
+        $this->assertNotEmpty($slot);
+
+        $this->client->forceSignupIntoMatchSlot($competition['type'], $competition['id'], $matchId, $signupId, $slot);
+
+        $brackets = $this->client->getTournamentBrackets($competition['id']);
+        $matches = $brackets[0]['rounds'][0]['matches'];
+
+        foreach ($matches as $match)
+        {
+            $this->assertNotEmpty($match['signup']);
+            $this->assertNotEmpty($match['signupOpponent']);
+        }
+
+        $signups = $this->client->getSignups($competition['type'], $competition['id']);
+
+        $this->assertCount(4, $signups);
+        $found = false;
+
+        foreach ($signups as $signup)
+        {
+            if ($signup['id'] == $signupId)
+            {
+                $this->assertFalse($signup['onWaitingList']);
+                $found = true;
+            }
+        }
+
+        $this->assertTrue($found);
+    }
 }

@@ -159,6 +159,9 @@ class Pwned_Client_RankingTest extends Pwned_ClientTestAbstract
 
         $entries = $this->client->getRankingEntriesAroundRemoteId($ranking['id'], 11111203);
 
+        //we sometime get only four entries and randomly failed test?
+        //var_dump($entries);
+
         $this->assertNotEmpty($entries);
         $this->assertCount(5, $entries);
 

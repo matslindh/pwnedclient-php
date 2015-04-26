@@ -97,6 +97,281 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
     }
 
     /**
+     * Test that everyone has the same number of home / away matches.
+     */
+    public function testLeagueMatchDistributionHomeAway()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt();
+        $rounds = $this->client->getRounds($league['type'], $league['id']);
+        $matchCounts = array();
+
+        foreach ($rounds as $round)
+        {
+            foreach ($round['matches'] as $match)
+            {
+                if (!isset($matchCounts[$match['signup']['name']]))
+                {
+                    $matchCounts[$match['signup']['name']] = array('home' => 0, 'away' => 0);
+                }
+
+                $matchCounts[$match['signup']['name']]['home']++;
+
+                if (!isset($matchCounts[$match['signupOpponent']['name']]))
+                {
+                    $matchCounts[$match['signupOpponent']['name']] = array('home' => 0, 'away' => 0);
+                }
+
+                $matchCounts[$match['signupOpponent']['name']]['away']++;
+            }
+        }
+
+        $this->assertCount(8, $matchCounts);
+
+        foreach ($matchCounts as $id => $counts)
+        {
+            $this->assertContains($counts['home'], array(3, 4), 'Signup ' . $id . ' has the wrong number of HOME matches: ' . $counts['home']);
+            $this->assertContains($counts['away'], array(3, 4), 'Signup ' . $id . ' has the wrong number of AWAY matches: ' . $counts['away']);
+        }
+    }
+
+    /**
+     * Test that everyone has almost the same distribution of matches within a series
+     */
+    public function testLeagueMatchDistributionIndex()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt();
+        $rounds = $this->client->getRounds($league['type'], $league['id']);
+        $matchCounts = array();
+
+        foreach ($rounds as $round)
+        {
+            $idx = 0;
+
+            foreach ($round['matches'] as $match)
+            {
+                if (!isset($offsetCounts[$match['signup']['name']]))
+                {
+                    $offsetCounts[$match['signup']['name']] = 0;
+                }
+
+                $offsetCounts[$match['signup']['name']] += $idx;
+
+                if (!isset($offsetCounts[$match['signupOpponent']['name']]))
+                {
+                    $offsetCounts[$match['signupOpponent']['name']] = 0;
+                }
+
+                $offsetCounts[$match['signupOpponent']['name']] += $idx;
+                $idx++;
+            }
+        }
+
+        $this->assertCount(8, $offsetCounts);
+
+        $avg = array_sum($offsetCounts) / count($offsetCounts);
+
+        foreach ($offsetCounts as $name => $counts)
+        {
+            $this->assertGreaterThan($avg/2, $counts, 'Signup ' . $name . ' has less than half the average for match offsets: ' . $counts);
+            $this->assertLessThan($avg+($avg/2), $counts, 'Signup ' . $name . ' exceeds the average with at least half the average for match offsets: ' . $counts);
+        }
+    }
+
+    /**
+     * Add penalty points for an entry in a League
+     */
+    public function testLeagueAddPenaltyPoints()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt();
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->client->addLeagueScorePenaltyPoints($league['id'], $table[0]['signup']['id'], 4);
+        $this->client->addLeagueScorePenaltyPoints($league['id'], $table[1]['signup']['id'], 2);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($newTable[7]['signup']['id'], $table[0]['signup']['id']);
+        $this->assertEquals($newTable[6]['signup']['id'], $table[1]['signup']['id']);
+        $this->assertEquals(4, $newTable[7]['pointsPenalty']);
+        $this->assertEquals(2, $newTable[6]['pointsPenalty']);
+        $this->assertEquals(-4, $newTable[7]['points']);
+        $this->assertEquals(-2, $newTable[6]['points']);
+        $this->assertEquals(0, $newTable[1]['points']);
+        $this->assertEquals(0, $newTable[0]['points']);
+    }
+
+    /**
+     * Subtract and set penalty points for an entry in a League
+     */
+    public function testLeagueSubtractAndSetPenaltyPoints()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt();
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $table[0]['signup']['id'], 37);
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $table[1]['signup']['id'], 17);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($newTable[7]['signup']['id'], $table[0]['signup']['id']);
+        $this->assertEquals($newTable[6]['signup']['id'], $table[1]['signup']['id']);
+        $this->assertEquals(37, $newTable[7]['pointsPenalty']);
+        $this->assertEquals(17, $newTable[6]['pointsPenalty']);
+        $this->assertEquals(-37, $newTable[7]['points']);
+        $this->assertEquals(-17, $newTable[6]['points']);
+        $this->assertEquals(0, $newTable[1]['points']);
+        $this->assertEquals(0, $newTable[0]['points']);
+
+        // let's subtract some of those penalty points again
+        $this->client->subtractLeagueScorePenaltyPoints($league['id'], $table[0]['signup']['id'], 20);
+        $this->client->subtractLeagueScorePenaltyPoints($league['id'], $table[1]['signup']['id'], 16);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($newTable[7]['signup']['id'], $table[0]['signup']['id']);
+        $this->assertEquals($newTable[6]['signup']['id'], $table[1]['signup']['id']);
+        $this->assertEquals(17, $newTable[7]['pointsPenalty']);
+        $this->assertEquals(1, $newTable[6]['pointsPenalty']);
+        $this->assertEquals(-17, $newTable[7]['points']);
+        $this->assertEquals(-1, $newTable[6]['points']);
+        $this->assertEquals(0, $newTable[1]['points']);
+        $this->assertEquals(0, $newTable[0]['points']);
+    }
+
+    /**
+     * Test that league penalty points make sense after played matches as well
+     */
+    public function testLeaguePenaltyPointsWithMatches()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt(array('teamCount' => 4));
+
+        $rounds = $this->client->getRounds($league['type'], $league['id']);
+        $matches = $rounds[0]['matches'];
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $matches[0]['signup']['id'], 32);
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $matches[1]['signup']['id'], 18);
+
+        $this->client->updateMatch($league['type'], $league['id'], $matches[0]['id'], array(
+            'score' => 4,
+            'scoreOpponent' => 1,
+        ));
+
+        $this->client->updateMatch($league['type'], $league['id'], $matches[1]['id'], array(
+            'score' => 2,
+            'scoreOpponent' => 2,
+        ));
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[3]['signup']['id'], $matches[0]['signup']['id']);
+        $this->assertEquals($table[2]['signup']['id'], $matches[1]['signup']['id']);
+
+        $this->assertEquals(-29, $table[3]['points']);
+        $this->assertEquals(1, $table[3]['wins']);
+        $this->assertEquals(32, $table[3]['pointsPenalty']);
+
+        $this->assertEquals(-17, $table[2]['points']);
+        $this->assertEquals(1, $table[2]['draws']);
+        $this->assertEquals(18, $table[2]['pointsPenalty']);
+
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $matches[0]['signup']['id'], 0);
+        $this->client->setLeagueScorePenaltyPoints($league['id'], $matches[1]['signup']['id'], 2);
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[0]['signup']['id'], $matches[0]['signup']['id']);
+        $this->assertEquals($table[3]['signup']['id'], $matches[1]['signup']['id']);
+
+        $this->assertEquals(3, $table[0]['points']);
+        $this->assertEquals(1, $table[0]['wins']);
+        $this->assertEquals(0, $table[0]['pointsPenalty']);
+
+        $this->assertEquals(-1, $table[3]['points']);
+        $this->assertEquals(1, $table[3]['draws']);
+        $this->assertEquals(2, $table[3]['pointsPenalty']);
+    }
+
+    /**
+     * Test that league bonus points make sense with played matches as well
+     */
+    public function testLeagueBonusPointsWithMatches()
+    {
+        $league = $this->createLeagueWithSignupsAndStartIt(array('teamCount' => 4));
+
+        $rounds = $this->client->getRounds($league['type'], $league['id']);
+        $matches = $rounds[0]['matches'];
+
+        // set up some initial bonuses
+        $this->client->addLeagueScoreBonusPoints($league['id'], $matches[0]['signup']['id'], 19);
+        $this->client->addLeagueScoreBonusPoints($league['id'], $matches[0]['signupOpponent']['id'], 32);
+        $this->client->addLeagueScoreBonusPoints($league['id'], $matches[1]['signup']['id'], 8);
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[0]['signup']['id'], $matches[0]['signupOpponent']['id']);
+        $this->assertEquals(32, $table[0]['points']);
+        $this->assertEquals(32, $table[0]['pointsBonus']);
+        $this->assertEquals($table[1]['signup']['id'], $matches[0]['signup']['id']);
+        $this->assertEquals(19, $table[1]['points']);
+        $this->assertEquals(19, $table[1]['pointsBonus']);
+        $this->assertEquals($table[2]['signup']['id'], $matches[1]['signup']['id']);
+        $this->assertEquals(8, $table[2]['points']);
+        $this->assertEquals(8, $table[2]['pointsBonus']);
+
+        $this->client->updateMatch($league['type'], $league['id'], $matches[0]['id'], array(
+            'score' => 4,
+            'scoreOpponent' => 1,
+        ));
+
+        $this->client->updateMatch($league['type'], $league['id'], $matches[1]['id'], array(
+            'score' => 2,
+            'scoreOpponent' => 2,
+        ));
+
+        // make sure that our bonuses are still valid after the matches
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[0]['signup']['id'], $matches[0]['signupOpponent']['id']);
+        $this->assertEquals($table[1]['signup']['id'], $matches[0]['signup']['id']);
+        $this->assertEquals($table[2]['signup']['id'], $matches[1]['signup']['id']);
+
+        $this->assertEquals(32, $table[0]['points']);
+        $this->assertEquals(0, $table[0]['wins']);
+        $this->assertEquals(1, $table[0]['losses']);
+        $this->assertEquals(32, $table[0]['pointsBonus']);
+
+        $this->assertEquals(22, $table[1]['points']);
+        $this->assertEquals(1, $table[1]['wins']);
+        $this->assertEquals(0, $table[1]['losses']);
+        $this->assertEquals(19, $table[1]['pointsBonus']);
+
+        $this->assertEquals(9, $table[2]['points']);
+        $this->assertEquals(1, $table[2]['draws']);
+        $this->assertEquals(8, $table[2]['pointsBonus']);
+
+        // remove one of the bonuses and change the other one
+        $this->client->setLeagueScoreBonusPoints($league['id'], $matches[0]['signupOpponent']['id'], 0);
+        $this->client->setLeagueScoreBonusPoints($league['id'], $matches[1]['signup']['id'], 2);
+
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[0]['signup']['id'], $matches[0]['signup']['id']);
+        $this->assertEquals($table[1]['signup']['id'], $matches[1]['signup']['id']);
+
+        $this->assertEquals(22, $table[0]['points']);
+        $this->assertEquals(1, $table[0]['wins']);
+        $this->assertEquals(19, $table[0]['pointsBonus']);
+
+        $this->assertEquals(3, $table[1]['points']);
+        $this->assertEquals(1, $table[1]['draws']);
+        $this->assertEquals(2, $table[1]['pointsBonus']);
+
+        $this->assertEquals(0, $table[3]['points']);
+        $this->assertEquals(1, $table[3]['losses']);
+        $this->assertEquals(0, $table[3]['pointsBonus']);
+
+        // remove 17 of the 19 bonus points again
+        $this->client->subtractLeagueScoreBonusPoints($league['id'], $table[0]['signup']['id'], 17);
+        $table = $this->client->getLeagueTable($league['id']);
+        $this->assertEquals($table[0]['signup']['id'], $matches[0]['signup']['id']);
+
+        $this->assertEquals(5, $table[0]['points']);
+        $this->assertEquals(1, $table[0]['wins']);
+        $this->assertEquals(2, $table[0]['pointsBonus']);
+    }
+
+    /**
      * Are we able to retrieve the table for the league?
      */
     public function testLeagueTable()
@@ -1045,7 +1320,6 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         ));
 
         $table = $this->client->getLeagueTable($league['id']);
-
         $this->assertEquals(1, $table[0]['wins']);
         $this->assertEquals(0, $table[1]['wins']);
         $this->assertEquals(0, $table[2]['wins']);

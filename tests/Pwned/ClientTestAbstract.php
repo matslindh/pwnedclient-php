@@ -2,6 +2,11 @@
 class Pwned_ClientTestAbstract extends PHPUnit_Framework_TestCase
 {
     /**
+     * @var Pwned_Client
+     */
+    protected $client = null;
+
+    /**
      * Set up a pwned client for internal re-use for each test.
      */
     public function setUp()
@@ -201,7 +206,7 @@ class Pwned_ClientTestAbstract extends PHPUnit_Framework_TestCase
         {
             $status = $entry['signup']['retired'] ? 'retired' : 'active';
 
-            print($entry['position'] . '. (' . $entry['wins'] . '/' . $entry['draws'] . '/' . $entry['losses'] . ') ' . $entry['signup']['name'] . ' (' . $entry['signup']['id'] . ') (' . $entry['points'] . ' points) (' . $status . ")\n");
+            print($entry['position'] . '. (' . $entry['wins'] . '/' . $entry['draws'] . '/' . $entry['losses'] . ') ' . $entry['signup']['name'] . ' (' . $entry['signup']['id'] . ') (' . $entry['points'] . ' points, ' . $entry['pointsBonus'] . ' bonus, ' . $entry['pointsPenalty'] . ' penalty) (' . $status . ")\n");
         }
     }
 }
