@@ -544,7 +544,6 @@ class Pwned_Client
      *
      * If you want to give the player's opponents walkovers instead of removing all matches, retrieve the matches for the league
      * and update the results for each match manually (for now, at least. Make a feature request if needed).
-     * If you want to give the other players
      *
      * @param int $leagueId The id of the league to modify
      * @param int $signupId The signup to retire from the league.
@@ -553,6 +552,21 @@ class Pwned_Client
     public function retireLeagueSignup($leagueId, $signupId)
     {
         return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('retire' => true));
+    }
+
+    /**
+     * Reinstate a signup / player / team from a league.
+     *
+     * Does the opposite of retiring a player. Reinstates the previous matches the team played and recalculates scores in the
+     * league.
+     *
+     * @param int $leagueId The id of the league to modify
+     * @param int $signupId The signup to reinstate into the league again.
+     * @return boolean
+     */
+    public function reinstateLeagueSignup($leagueId, $signupId)
+    {
+        return $this->request('leagues/' . $leagueId . '/signups/' . $signupId, 'POST', array('reinstate' => true));
     }
 
     /**

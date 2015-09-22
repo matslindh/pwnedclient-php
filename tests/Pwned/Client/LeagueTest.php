@@ -1242,6 +1242,12 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         {
             $this->assertEquals($entry['wins'] * 3 + $entry['draws'], $entry['points']);
         }
+
+        return array(
+            'league' => $league,
+            'newEntry' => $newTable[5],
+            'previousEntry' => $table[2],
+        );
     }
 
     /**
@@ -1294,6 +1300,92 @@ class Pwned_Client_LeagueTest extends Pwned_ClientTestAbstract
         $this->assertEquals(0, $newTable[6]['scoreAgainst']);
         $this->assertEquals(0, $newTable[6]['score']);
         $this->assertEquals(0, $newTable[6]['points']);
+
+        // check that we have corrected the scores for the other teams / players as well
+        foreach ($newTable as $entry)
+        {
+            $this->assertEquals($entry['wins'] * 3 + $entry['draws'], $entry['points']);
+        }
+
+        return array(
+            'league' => $league,
+            'newEntry' => $newTable[6],
+            'previousEntry' => $table[2],
+        );
+    }
+
+    /**
+     * Test if we can reinstate a player after the player has been retired
+     *
+     * @depends testRetirePlayerAndMatches
+     */
+    public function testReinstateRetiredLeaguePlayer($args)
+    {
+        $league = $args['league'];
+
+        // previously player #3
+        $tableEntry = $args['newEntry'];
+        $prevEntry = $args['previousEntry'];
+
+        // reinstate the player again, previously #3 in the ranking
+        $this->client->reinstateLeagueSignup($league['id'], $tableEntry['signup']['id']);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertCount(6, $newTable);
+
+        // assert the previous player is dead last (other players may have moved around "randomly", so we just test this..
+        $this->assertEquals($tableEntry['signup']['id'], $newTable[2]['signup']['id']);
+
+        // assert the player was retired
+        $this->assertFalse($newTable[2]['signup']['retired']);
+        $this->assertEquals($prevEntry['wins'], $newTable[2]['wins']);
+        $this->assertEquals($prevEntry['draws'], $newTable[2]['draws']);
+        $this->assertEquals($prevEntry['losses'], $newTable[2]['losses']);
+        $this->assertEquals($prevEntry['played'], $newTable[2]['played']);
+        $this->assertEquals($prevEntry['scoreFor'], $newTable[2]['scoreFor']);
+        $this->assertEquals($prevEntry['scoreAgainst'], $newTable[2]['scoreAgainst']);
+        $this->assertEquals($prevEntry['score'], $newTable[2]['score']);
+        $this->assertEquals($prevEntry['points'], $newTable[2]['points']);
+
+        // check that we have corrected the scores for the other teams / players as well
+        foreach ($newTable as $entry)
+        {
+            $this->assertEquals($entry['wins'] * 3 + $entry['draws'], $entry['points']);
+        }
+    }
+
+    /**
+     * Test if we can reinstate a player after the player has been retired in an uneven league setup
+     *
+     * @depends testRetirePlayerAndMatchesInUnevenSetup
+     */
+    public function testReinstatePlayerAndMatchesInUnevenSetup($args)
+    {
+        $league = $args['league'];
+
+        // previously player #3
+        $tableEntry = $args['newEntry'];
+        $prevEntry = $args['previousEntry'];
+
+        // reinstate the player again, previously #3 in the ranking
+        $this->client->reinstateLeagueSignup($league['id'], $tableEntry['signup']['id']);
+
+        $newTable = $this->client->getLeagueTable($league['id']);
+        $this->assertCount(7, $newTable);
+
+        // assert the previous player is dead last (other players may have moved around "randomly", so we just test this..
+        $this->assertEquals($tableEntry['signup']['id'], $newTable[2]['signup']['id']);
+
+        // assert the player was retired
+        $this->assertFalse($newTable[2]['signup']['retired']);
+        $this->assertEquals($prevEntry['wins'], $newTable[2]['wins']);
+        $this->assertEquals($prevEntry['draws'], $newTable[2]['draws']);
+        $this->assertEquals($prevEntry['losses'], $newTable[2]['losses']);
+        $this->assertEquals($prevEntry['played'], $newTable[2]['played']);
+        $this->assertEquals($prevEntry['scoreFor'], $newTable[2]['scoreFor']);
+        $this->assertEquals($prevEntry['scoreAgainst'], $newTable[2]['scoreAgainst']);
+        $this->assertEquals($prevEntry['score'], $newTable[2]['score']);
+        $this->assertEquals($prevEntry['points'], $newTable[2]['points']);
 
         // check that we have corrected the scores for the other teams / players as well
         foreach ($newTable as $entry)
